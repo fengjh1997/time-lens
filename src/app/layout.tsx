@@ -1,22 +1,15 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Outfit } from "next/font/google";
 import "./globals.css";
 import Sidebar from "@/components/layout/sidebar";
 import MobileNav from "@/components/layout/MobileNav";
+import ThemeProvider from "@/components/layout/ThemeProvider";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const outfit = Outfit({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Time Lens - 时间管理",
-  description: "星辰能量驱动的时间管理与规划工具",
+  title: "Time Lens | 星辰透镜",
+  description: "捕捉每一刻的心流状态 - Time Lens 时间管理与规划",
 };
 
 export default function RootLayout({
@@ -25,24 +18,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh-CN">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {/* Ambient Background */}
-        <div className="ambient-bg">
-          <div className="ambient-blob-1"></div>
-          <div className="ambient-blob-2"></div>
-        </div>
-
-        <div className="flex h-screen bg-transparent text-[var(--foreground)] overflow-hidden">
-          <Sidebar />
-          <main className="flex-1 overflow-y-auto w-full max-w-[100vw] sm:max-w-none relative z-10">
-            {children}
-          </main>
-        </div>
-
-        <MobileNav />
+    <html lang="zh">
+      <body className={`${outfit.className} antialiased bg-[var(--background)] text-[var(--foreground)]`}>
+        <ThemeProvider>
+          <div className="flex h-screen overflow-hidden">
+            <Sidebar />
+            <main className="flex-1 min-w-0 overflow-hidden relative">
+              {children}
+            </main>
+            <MobileNav />
+          </div>
+        </ThemeProvider>
       </body>
     </html>
   );

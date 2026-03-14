@@ -17,40 +17,36 @@
   --shadow-sm: rgba(15, 15, 15, 0.05) 0px 0px 0px 1px, rgba(15, 15, 15, 0.08) 0px 4px 12px;
   
   /* Blob Colors */
-  --blob-1: rgba(51, 163, 51, 0.15); /* Green */
-  --blob-2: rgba(51, 120, 163, 0.1); /* Soft Blue */
+  --blob-1: rgba(51, 163, 51, 0.1); 
+  --blob-2: rgba(51, 120, 163, 0.08); 
   
   /* Gamification Colors (Light Mode) */
-  --score-punish: #5a5a5a; /* -1: Wasted (Dark Gray) */
-  --score-empty: rgba(247, 247, 245, 0.6);  /* 0: Empty (Notion light gray bg, translucent) */
-  --score-1: #cce8cc;      /* 1: Light Green */
-  --score-2: #99d199;      /* 2: Medium Light Green */
-  --score-3: #66ba66;      /* 3: Medium Green */
-  --score-4: #33a333;      /* 4: Dark Green (Most productive) */
+  --score-punish: #5a5a5a; 
+  --score-empty: rgba(247, 247, 245, 0.6); 
+  --score-1: #cce8cc; 
+  --score-2: #99d199; 
+  --score-3: #66ba66; 
+  --score-4: #33a333; 
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    /* Notion-like Dark Theme with Glassmorphism */
-    --background: #111111;
-    --foreground: rgba(255, 255, 255, 0.85);
-    --border-color: rgba(255, 255, 255, 0.08);
-    --hover-bg: rgba(255, 255, 255, 0.04);
-    --modal-bg: rgba(30, 30, 30, 0.75); /* Translucent for blur */
-    --shadow-sm: rgba(0, 0, 0, 0.4) 0px 0px 0px 1px, rgba(0, 0, 0, 0.4) 0px 8px 24px;
+/* DARK MODE OVERRIDES */
+.dark {
+  --background: #0d0d0c;
+  --foreground: #f4f4f3;
+  --border-color: rgba(255, 255, 255, 0.1);
+  --hover-bg: rgba(255, 255, 255, 0.06);
+  --modal-bg: rgba(20, 20, 20, 0.8);
+  --shadow-sm: rgba(0, 0, 0, 0.6) 0px 0px 0px 1px, rgba(0, 0, 0, 0.8) 0px 12px 32px;
 
-    /* Blob Colors */
-    --blob-1: rgba(64, 191, 64, 0.06); 
-    --blob-2: rgba(64, 140, 191, 0.04);
-    
-    /* Gamification Colors (Dark Mode) */
-    --score-punish: #2c2c2c; /* -1: Wasted */
-    --score-empty: rgba(36, 36, 36, 0.5);  /* 0: Empty */
-    --score-1: #1a3d1a;      /* 1: Dark Light Green */
-    --score-2: #265c26;      /* 2: Medium Green */
-    --score-3: #338033;      /* 3: Bright Green */
-    --score-4: #40bf40;      /* 4: Very Bright Green */
-  }
+  --blob-1: rgba(64, 191, 64, 0.08); 
+  --blob-2: rgba(64, 140, 191, 0.06);
+
+  --score-punish: #2c2c2c;
+  --score-empty: rgba(30, 30, 30, 0.7);
+  --score-1: #1a3d1a;
+  --score-2: #265c26;
+  --score-3: #338033;
+  --score-4: #40bf40;
 }
 
 body {
@@ -59,6 +55,7 @@ body {
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* --- GLASSSMORPHISM & AMBIENT BACKGROUND --- */
@@ -107,7 +104,6 @@ body {
 /* --- GLASS UI UTILS --- */
 .glass-panel {
   background: var(--background);
-  /* For browsers that support backdrop-filter */
   @supports (backdrop-filter: blur(12px)) {
     background: rgba(var(--background-rgb, 255, 255, 255), 0.7);
     backdrop-filter: saturate(180%) blur(20px);
@@ -116,7 +112,7 @@ body {
 }
 .dark .glass-panel {
   @supports (backdrop-filter: blur(12px)) {
-    background: rgba(17, 17, 17, 0.65);
+    background: rgba(13, 13, 12, 0.7);
   }
 }
 
@@ -130,23 +126,22 @@ body {
 
 /* --- MICRO ANIMATIONS --- */
 @keyframes spring-pop {
-  0% { transform: scale(0.95); }
-  40% { transform: scale(1.04); }
-  100% { transform: scale(1); }
+  0% { transform: scale(0.95); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
 }
 
 .animate-spring {
-  animation: spring-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  animation: spring-pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
 @keyframes ripple-glow {
-  0% { box-shadow: 0 0 0 0 rgba(51, 163, 51, 0.4); }
-  70% { box-shadow: 0 0 0 15px rgba(51, 163, 51, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(51, 163, 51, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+  70% { box-shadow: 0 0 0 15px rgba(245, 158, 11, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
 }
 
 .animate-ripple {
-  animation: ripple-glow 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  animation: ripple-glow 1s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
 }
 
 /* Custom Scrollbar */

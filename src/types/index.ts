@@ -13,25 +13,23 @@ export interface Tag {
 export interface TimeBlock {
   id: string;
   dayOfWeek: number; // 0-6
-  hourId: number;    // 0-23
+  hourId: number;    // 0-23 or special ID for Bonus
   score: Score;
   content: string;
   tagId?: string;    // optional tag reference
   status: BlockStatus; // 'planned' = future plan, 'completed' = scored+done
+  pomodoros?: number;  // number of 25min pomodoros in this hour (0, 1, 2)
+  isBonus?: boolean;   // if true, this is a bonus time block
 }
 
 export interface UserSettings {
-  timeGranularity: 60 | 30 | 25; // minutes per block
-  decimalPlaces: 0 | 1;          // energy display precision
-  theme: 'system' | 'light' | 'dark';
+  timeGranularity: 60;  // Locked to 60 for V5
+  decimalPlaces: 0 | 1;
+  theme: 'light' | 'dark';
+  hideSleepTime: boolean; // 23:00 - 09:00
 }
 
 export interface DayData {
   date: string; // YYYY-MM-DD
-  blocks: Record<number, TimeBlock>; // Keyed by hourId
-}
-
-export interface WeekData {
-  id: string; // e.g., "2024-W12" 
-  days: Record<number, DayData>; // Keyed by dayOfWeek
+  blocks: Record<string, TimeBlock>; // Keyed by block ID
 }

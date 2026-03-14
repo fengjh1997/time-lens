@@ -2,69 +2,107 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Calendar, LayoutDashboard, Settings, Compass, Sun } from "lucide-react";
+import { 
+  Calendar, 
+  LayoutDashboard, 
+  Compass, 
+  Sun, 
+  Settings, 
+  Star,
+  Moon,
+  Sparkles
+} from "lucide-react";
 import { useTimeStore } from "@/store/timeStore";
 import { EnergyDisplay } from "@/components/ui/StarRating";
 
+const NAV_ITEMS = [
+  { icon: Compass, label: "一周规划", href: "/" },
+  { icon: Sun, label: "今日焦点", href: "/day" },
+  { icon: Calendar, label: "全景视野", href: "/month" },
+  { icon: LayoutDashboard, label: "数据洞察", href: "/dashboard" },
+  { icon: Settings, label: "应用设置", href: "/settings" },
+];
+
 export default function Sidebar() {
   const pathname = usePathname();
-  const { totalEnergy, settings } = useTimeStore();
-
-  const navItems = [
-    { name: "今日焦点", href: "/day", icon: Sun },
-    { name: "一周规划", href: "/", icon: Compass },
-    { name: "月度全景", href: "/month", icon: Calendar },
-    { name: "数据洞察", href: "/dashboard", icon: LayoutDashboard },
-    { name: "应用设置", href: "/settings", icon: Settings },
-  ];
+  const { totalEnergy, settings, toggleTheme } = useTimeStore();
 
   return (
-    <aside className="w-64 h-full bg-[var(--background)] border-r border-[#e5e5e5] dark:border-[#333333] flex-col hidden sm:flex pt-6 relative z-50">
-      {/* Logo */}
-      <div className="px-6 pb-5 flex items-center gap-3">
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white text-sm font-black shadow-sm">
-          ★
+    <div className="w-[260px] h-full bg-[var(--background)] border-r border-[#e5e5e5] dark:border-[#333333] hidden sm:flex flex-col p-6">
+      {/* Brand */}
+      <div className="flex items-center gap-3 px-2 mb-10">
+        <div className="w-10 h-10 rounded-[14px] bg-amber-500 flex items-center justify-center shadow-lg shadow-amber-500/30">
+          <Star size={22} color="white" fill="white" />
         </div>
-        <span className="font-black text-[17px] tracking-tight">Time Lens</span>
+        <div>
+          <h1 className="font-black text-xl tracking-tight leading-none italic">Time Lens</h1>
+          <span className="text-[10px] font-black tracking-widest text-amber-500 uppercase">Star Energy</span>
+        </div>
       </div>
 
       {/* Energy Card */}
-      <div className="px-4 py-4 mx-4 my-1 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50/50 dark:from-amber-950/20 dark:to-orange-950/10 flex items-center gap-3.5 border border-amber-200/30 dark:border-amber-800/20 shadow-sm">
-        <div className="p-2.5 bg-amber-400/20 dark:bg-amber-500/10 rounded-xl">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="#f59e0b"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      <div className="bg-gradient-to-br from-amber-400 to-orange-500 rounded-[28px] p-5 text-white mb-8 shadow-xl shadow-amber-500/20 group relative overflow-hidden transition-transform hover:scale-[1.02]">
+        <div className="absolute -top-6 -right-6 w-20 h-20 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-colors" />
+        <p className="text-[11px] font-black opacity-80 uppercase tracking-widest flex items-center gap-1.5">
+          <Sparkles size={12} />
+          当前总能量
+        </p>
+        <div className="text-3xl font-black mt-2 flex items-center gap-1">
+          <EnergyDisplay value={totalEnergy} />
         </div>
-        <div className="flex flex-col">
-          <span className="text-[11px] text-amber-600/60 dark:text-amber-400/50 font-bold tracking-wider">总能量值</span>
-          <span className="text-lg font-black text-amber-600 dark:text-amber-400 tracking-tight">
-            <EnergyDisplay value={totalEnergy} decimals={settings.decimalPlaces} />
-          </span>
+        <div className="mt-3 w-full bg-white/20 h-1.5 rounded-full overflow-hidden">
+          <div className="bg-white h-full w-[65%] rounded-full shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
         </div>
+        <p className="text-[10px] font-bold mt-2 opacity-70">距离下一等级还需 42.5 ★</p>
       </div>
 
       {/* Nav */}
-      <div className="flex-1 px-3 py-4 flex flex-col gap-1">
-        <div className="px-3 py-2 text-[11px] font-bold text-gray-400 tracking-widest mt-1 mb-1">功能导航</div>
-        
-        {navItems.map((item) => {
-          const isActive = pathname === item.href;
-          const Icon = item.icon;
+      <nav className="flex-1 space-y-1">
+        {NAV_ITEMS.map((item) => {
+          const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
           return (
             <Link
-               key={item.name}
-               href={item.href}
-               className={`flex items-center gap-3 px-3 py-2.5 rounded-2xl text-[14px] transition-all duration-300 ease-out
-                 ${isActive 
-                   ? "bg-[var(--foreground)] text-[var(--background)] font-semibold shadow-md" 
-                   : "text-gray-500 hover:bg-[var(--hover-bg)] hover:text-[var(--foreground)] font-medium"
-                 }
-               `}
+              key={item.href}
+              href={item.href}
+              className={`flex items-center gap-3.5 px-4 py-3.5 rounded-2xl transition-all duration-300 group
+                ${isActive 
+                  ? "bg-amber-500 text-white shadow-lg shadow-amber-500/20" 
+                  : "text-gray-400 font-bold hover:bg-black/5 dark:hover:bg-white/5 hover:text-black dark:hover:text-white"
+                }
+              `}
             >
-              <Icon size={18} className={isActive ? "text-[var(--background)]" : "text-gray-400"} />
-              <span className="flex-1">{item.name}</span>
+              <item.icon size={20} className={isActive ? "text-white" : "group-hover:scale-110 transition-transform"} />
+              <span className="text-[14px] font-black">{item.label}</span>
             </Link>
           );
         })}
+      </nav>
+
+      {/* Theme Toggle & User */}
+      <div className="pt-6 border-t border-[#e5e5e5] dark:border-[#333333] space-y-4">
+        <button 
+          onClick={toggleTheme}
+          className="w-full flex items-center justify-between px-4 py-3 bg-black/[0.03] dark:bg-white/[0.04] rounded-2xl hover:bg-black/[0.06] dark:hover:bg-white/[0.08] transition-all group"
+        >
+          <div className="flex items-center gap-3">
+             {settings.theme === 'light' ? <Sun size={18} className="text-amber-500" /> : <Moon size={18} className="text-blue-400" />}
+             <span className="text-[13px] font-black text-gray-500 group-hover:text-black dark:group-hover:text-white transition-colors">
+               {settings.theme === 'light' ? '白天模式' : '深色模式'}
+             </span>
+          </div>
+          <div className={`w-8 h-4 rounded-full p-0.5 transition-colors ${settings.theme === 'light' ? 'bg-amber-200' : 'bg-blue-900'}`}>
+             <div className={`w-3 h-3 rounded-full bg-white transition-transform ${settings.theme === 'light' ? 'translate-x-0' : 'translate-x-4'}`} />
+          </div>
+        </button>
+
+        <div className="flex items-center gap-3 px-2">
+          <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800" />
+          <div className="flex-1 min-w-0">
+            <p className="text-[13px] font-black truncate">Time Lens 用户</p>
+            <p className="text-[10px] text-gray-400 font-bold">Standard Edition</p>
+          </div>
+        </div>
       </div>
-    </aside>
+    </div>
   );
 }
