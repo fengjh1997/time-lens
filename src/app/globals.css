@@ -1,0 +1,166 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+:root {
+  /* Notion-like Light Theme with Glassmorphism */
+  --background: #fafaf9; /* Slightly off-white to make glass pop */
+  --foreground: #37352f;
+  --border-color: rgba(55, 53, 47, 0.12);
+  --hover-bg: rgba(55, 53, 47, 0.05);
+  --modal-bg: rgba(255, 255, 255, 0.85); /* Translucent for blur */
+  --shadow-sm: rgba(15, 15, 15, 0.05) 0px 0px 0px 1px, rgba(15, 15, 15, 0.08) 0px 4px 12px;
+  
+  /* Blob Colors */
+  --blob-1: rgba(51, 163, 51, 0.15); /* Green */
+  --blob-2: rgba(51, 120, 163, 0.1); /* Soft Blue */
+  
+  /* Gamification Colors (Light Mode) */
+  --score-punish: #5a5a5a; /* -1: Wasted (Dark Gray) */
+  --score-empty: rgba(247, 247, 245, 0.6);  /* 0: Empty (Notion light gray bg, translucent) */
+  --score-1: #cce8cc;      /* 1: Light Green */
+  --score-2: #99d199;      /* 2: Medium Light Green */
+  --score-3: #66ba66;      /* 3: Medium Green */
+  --score-4: #33a333;      /* 4: Dark Green (Most productive) */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Notion-like Dark Theme with Glassmorphism */
+    --background: #111111;
+    --foreground: rgba(255, 255, 255, 0.85);
+    --border-color: rgba(255, 255, 255, 0.08);
+    --hover-bg: rgba(255, 255, 255, 0.04);
+    --modal-bg: rgba(30, 30, 30, 0.75); /* Translucent for blur */
+    --shadow-sm: rgba(0, 0, 0, 0.4) 0px 0px 0px 1px, rgba(0, 0, 0, 0.4) 0px 8px 24px;
+
+    /* Blob Colors */
+    --blob-1: rgba(64, 191, 64, 0.06); 
+    --blob-2: rgba(64, 140, 191, 0.04);
+    
+    /* Gamification Colors (Dark Mode) */
+    --score-punish: #2c2c2c; /* -1: Wasted */
+    --score-empty: rgba(36, 36, 36, 0.5);  /* 0: Empty */
+    --score-1: #1a3d1a;      /* 1: Dark Light Green */
+    --score-2: #265c26;      /* 2: Medium Green */
+    --score-3: #338033;      /* 3: Bright Green */
+    --score-4: #40bf40;      /* 4: Very Bright Green */
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* --- GLASSSMORPHISM & AMBIENT BACKGROUND --- */
+.ambient-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1;
+  overflow: hidden;
+  background: var(--background);
+  pointer-events: none;
+}
+
+.ambient-blob-1 {
+  position: absolute;
+  top: -10%;
+  right: -5%;
+  width: 50vw;
+  height: 50vw;
+  border-radius: 50%;
+  background: var(--blob-1);
+  filter: blur(100px);
+  animation: float 20s ease-in-out infinite alternate;
+}
+
+.ambient-blob-2 {
+  position: absolute;
+  bottom: -20%;
+  left: -10%;
+  width: 60vw;
+  height: 60vw;
+  border-radius: 50%;
+  background: var(--blob-2);
+  filter: blur(120px);
+  animation: float 25s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes float {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-30px, 50px) scale(1.05); }
+  100% { transform: translate(40px, -30px) scale(0.95); }
+}
+
+/* --- GLASS UI UTILS --- */
+.glass-panel {
+  background: var(--background);
+  /* For browsers that support backdrop-filter */
+  @supports (backdrop-filter: blur(12px)) {
+    background: rgba(var(--background-rgb, 255, 255, 255), 0.7);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+  }
+}
+.dark .glass-panel {
+  @supports (backdrop-filter: blur(12px)) {
+    background: rgba(17, 17, 17, 0.65);
+  }
+}
+
+.glass-modal {
+  background: var(--modal-bg);
+  backdrop-filter: saturate(200%) blur(30px);
+  -webkit-backdrop-filter: saturate(200%) blur(30px);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+}
+
+/* --- MICRO ANIMATIONS --- */
+@keyframes spring-pop {
+  0% { transform: scale(0.95); }
+  40% { transform: scale(1.04); }
+  100% { transform: scale(1); }
+}
+
+.animate-spring {
+  animation: spring-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes ripple-glow {
+  0% { box-shadow: 0 0 0 0 rgba(51, 163, 51, 0.4); }
+  70% { box-shadow: 0 0 0 15px rgba(51, 163, 51, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(51, 163, 51, 0); }
+}
+
+.animate-ripple {
+  animation: ripple-glow 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(150, 150, 150, 0.4);
+}
