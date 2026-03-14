@@ -17,6 +17,7 @@ export default function AuthPage() {
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [regSuccess, setRegSuccess] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -28,10 +29,11 @@ export default function AuthPage() {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setRegSuccess(false);
 
     try {
       if (mode === 'register') {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -41,7 +43,13 @@ export default function AuthPage() {
           }
         });
         if (error) throw error;
-        alert("注册成功！请查收确认邮件。");
+        
+        // If data.user exists but data.session is null, it means confirmation is required.
+        if (data.user && !data.session) {
+          setRegSuccess(true);
+        } else if (data.session) {
+          router.push("/day");
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -80,103 +88,125 @@ export default function AuthPage() {
               <Sparkles size={32} />
             </div>
             <h1 className="text-3xl font-black tracking-tight text-[var(--foreground)]">
-              {mode === 'login' ? '欢迎回来' : '开启星辰之旅'}
+              {regSuccess ? '邮件已发出' : (mode === 'login' ? '欢迎回来' : '开启星辰之旅')}
             </h1>
             <p className="text-[13px] text-gray-400 font-bold uppercase tracking-widest">
-              {mode === 'login' ? 'TIME LENS · 时间透镜' : '创建您的专属时间蓝图'}
+              {regSuccess ? '请查收确认邮件以激活账号' : (mode === 'login' ? 'TIME LENS · 时间透镜' : '创建您的专属时间蓝图')}
             </p>
           </div>
 
-          <form onSubmit={handleAuth} className="space-y-5">
-            {mode === 'register' && (
-              <div className="space-y-1.5">
-                <div className="relative group">
-                  <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[var(--primary-color)] transition-colors" size={18} />
-                  <input
-                    type="text"
-                    placeholder="您的昵称"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    required
-                    className="w-full bg-black/[0.03] dark:bg-white/[0.05] border-2 border-transparent focus:border-[var(--primary-color)]/20 rounded-2xl py-4 pl-12 pr-4 text-[15px] font-bold focus:outline-none focus:ring-4 focus:ring-[var(--primary-glow)] transition-all placeholder:text-gray-400"
-                  />
+          {regSuccess ? (
+            <div className="space-y-6 text-center animate-spring">
+              <div className="p-6 bg-emerald-50 dark:bg-emerald-950/20 rounded-[32px] border border-emerald-500/20">
+                <p className="text-[14px] font-bold text-emerald-600 dark:text-emerald-400 leading-relaxed">
+                  验证邮件已发送至 <span className="underline">{email}</span>。<br/>
+                  确认邮件后即可返回此页面登录。
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setRegSuccess(false);
+                  setMode('login');
+                }}
+                className="w-full bg-[var(--primary-color)] text-white py-4.5 rounded-3xl font-black text-[16px] shadow-2xl shadow-[var(--primary-glow)] hover:-translate-y-1 active:scale-95 transition-all"
+              >
+                返回登录
+              </button>
+            </div>
+          ) : (
+            <>
+              <form onSubmit={handleAuth} className="space-y-5">
+                {mode === 'register' && (
+                  <div className="space-y-1.5">
+                    <div className="relative group">
+                      <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[var(--primary-color)] transition-colors" size={18} />
+                      <input
+                        type="text"
+                        placeholder="您的昵称"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        required
+                        className="w-full bg-black/[0.03] dark:bg-white/[0.05] border-2 border-transparent focus:border-[var(--primary-color)]/20 rounded-2xl py-4 pl-12 pr-4 text-[15px] font-bold focus:outline-none focus:ring-4 focus:ring-[var(--primary-glow)] transition-all placeholder:text-gray-400"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-1.5">
+                  <div className="relative group">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[var(--primary-color)] transition-colors" size={18} />
+                    <input
+                      type="email"
+                      placeholder="电子邮箱"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      className="w-full bg-black/[0.03] dark:bg-white/[0.05] border-2 border-transparent focus:border-[var(--primary-color)]/20 rounded-2xl py-4 pl-12 pr-4 text-[15px] font-bold focus:outline-none focus:ring-4 focus:ring-[var(--primary-glow)] transition-all placeholder:text-gray-400"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="relative group">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[var(--primary-color)] transition-colors" size={18} />
+                    <input
+                      type="password"
+                      placeholder="登录密码"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      className="w-full bg-black/[0.03] dark:bg-white/[0.05] border-2 border-transparent focus:border-[var(--primary-color)]/20 rounded-2xl py-4 pl-12 pr-4 text-[15px] font-bold focus:outline-none focus:ring-4 focus:ring-[var(--primary-glow)] transition-all placeholder:text-gray-400"
+                    />
+                  </div>
+                </div>
+
+                {error && (
+                  <p className="text-[12px] font-bold text-red-500 bg-red-50 dark:bg-red-950/20 px-4 py-2 rounded-xl border border-red-500/20">
+                    {error}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-[var(--primary-color)] text-white py-4.5 rounded-3xl font-black text-[16px] shadow-2xl shadow-[var(--primary-glow)] hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-2 group"
+                >
+                  {loading ? <Loader2 className="animate-spin" size={20} /> : (
+                    <>
+                      {mode === 'login' ? '立即登录' : '立即注册'}
+                      <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                    </>
+                  )}
+                </button>
+              </form>
+
+              <div className="relative py-4">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-[var(--border-color)]"></div>
+                </div>
+                <div className="relative flex justify-center text-[11px] font-black uppercase tracking-widest">
+                  <span className="bg-[var(--modal-bg)] px-4 text-gray-400">或者通过</span>
                 </div>
               </div>
-            )}
 
-            <div className="space-y-1.5">
-              <div className="relative group">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[var(--primary-color)] transition-colors" size={18} />
-                <input
-                  type="email"
-                  placeholder="电子邮箱"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="w-full bg-black/[0.03] dark:bg-white/[0.05] border-2 border-transparent focus:border-[var(--primary-color)]/20 rounded-2xl py-4 pl-12 pr-4 text-[15px] font-bold focus:outline-none focus:ring-4 focus:ring-[var(--primary-glow)] transition-all placeholder:text-gray-400"
-                />
+              <button
+                onClick={handleGithubLogin}
+                className="w-full bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-[var(--foreground)] py-4 rounded-3xl font-bold text-[14px] transition-all flex items-center justify-center gap-3 border border-[var(--border-color)]"
+              >
+                <Github size={20} />
+                使用 GitHub 账号登录
+              </button>
+
+              <div className="text-center pt-4">
+                <button
+                  onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
+                  className="text-[14px] font-bold text-gray-400 hover:text-[var(--primary-color)] transition-colors"
+                >
+                  {mode === 'login' ? '还没有账号？立即创建' : '已有账号？返回登录'}
+                </button>
               </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <div className="relative group">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[var(--primary-color)] transition-colors" size={18} />
-                <input
-                  type="password"
-                  placeholder="登录密码"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="w-full bg-black/[0.03] dark:bg-white/[0.05] border-2 border-transparent focus:border-[var(--primary-color)]/20 rounded-2xl py-4 pl-12 pr-4 text-[15px] font-bold focus:outline-none focus:ring-4 focus:ring-[var(--primary-glow)] transition-all placeholder:text-gray-400"
-                />
-              </div>
-            </div>
-
-            {error && (
-              <p className="text-[12px] font-bold text-red-500 bg-red-50 dark:bg-red-950/20 px-4 py-2 rounded-xl border border-red-500/20">
-                {error}
-              </p>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-[var(--primary-color)] text-white py-4.5 rounded-3xl font-black text-[16px] shadow-2xl shadow-[var(--primary-glow)] hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-2 group"
-            >
-              {loading ? <Loader2 className="animate-spin" size={20} /> : (
-                <>
-                  {mode === 'login' ? '立即登录' : '立即注册'}
-                  <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
-                </>
-              )}
-            </button>
-          </form>
-
-          <div className="relative py-4">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-[var(--border-color)]"></div>
-            </div>
-            <div className="relative flex justify-center text-[11px] font-black uppercase tracking-widest">
-              <span className="bg-[var(--modal-bg)] px-4 text-gray-400">或者通过</span>
-            </div>
-          </div>
-
-          <button
-            onClick={handleGithubLogin}
-            className="w-full bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-[var(--foreground)] py-4 rounded-3xl font-bold text-[14px] transition-all flex items-center justify-center gap-3 border border-[var(--border-color)]"
-          >
-            <Github size={20} />
-            使用 GitHub 账号登录
-          </button>
-
-          <div className="text-center pt-4">
-            <button
-              onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
-              className="text-[14px] font-bold text-gray-400 hover:text-[var(--primary-color)] transition-colors"
-            >
-              {mode === 'login' ? '还没有账号？立即创建' : '已有账号？返回登录'}
-            </button>
-          </div>
+            </>
+          )}
         </div>
 
         <div className="mt-8 text-center text-[12px] text-gray-400 font-bold opacity-50 px-8">

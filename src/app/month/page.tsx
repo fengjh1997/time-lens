@@ -60,10 +60,15 @@ export default function MonthPage() {
   const maxMonthEnergy = Math.max(...Object.values(monthDailyScores).map(d => Math.abs(d.energy)), 5);
 
   function getHeatColor(energy: number | null, maxE: number) {
-    if (energy === null) return 'var(--score-empty)';
+    if (energy === null || energy === 0) return 'var(--score-empty)';
     if (energy < 0) return 'var(--score-punish)';
-    const intensity = Math.min(energy / maxE, 1);
-    return `rgba(var(--primary-rgb), ${0.1 + intensity * 0.9})`;
+    
+    // Scale energy to 4 levels similar to Star Energy
+    // Level 1: 0 < E <= 2 | Level 2: 2 < E <= 4 | Level 3: 4 < E <= 6 | Level 4: E > 6
+    if (energy <= 2) return 'var(--score-1)';
+    if (energy <= 4) return 'var(--score-2)';
+    if (energy <= 6) return 'var(--score-3)';
+    return 'var(--score-4)';
   }
 
   const navigateMonth = (dir: number) => {

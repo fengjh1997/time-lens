@@ -101,6 +101,11 @@ export default function RecordModal({
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
+  const now = new Date();
+  const currentDayStr = now.toISOString().split('T')[0];
+  const currentHour = now.getHours();
+  const isCurrentTimeBlock = dateStr === currentDayStr && hourIdx === currentHour;
+
   const timeLabel = isBonusType ? "Bonus Time (额外增益时段)" : `${hourIdx.toString().padStart(2, "0")}:00 - ${(hourIdx + 1).toString().padStart(2, "0")}:00`;
 
   return (
@@ -159,8 +164,8 @@ export default function RecordModal({
             </div>
           )}
 
-          {/* interactive Pomodoro Timer (Harmonized with Theme) */}
-          {!isPlanned && (
+          {/* 1. interactive Pomodoro Timer (Only if Current Time Block) */}
+          {!isPlanned && isCurrentTimeBlock && (
             <div className="bg-[var(--primary-light)] rounded-[40px] p-7 border border-[var(--primary-color)]/10 space-y-6 relative overflow-hidden">
               <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
                 <Timer size={80} className="text-[var(--primary-color)]" />
@@ -218,22 +223,22 @@ export default function RecordModal({
             </div>
           )}
 
-          {/* Content Input */}
-          <div className="flex flex-col gap-4">
-            <label className="text-[15px] font-black text-[var(--foreground)] opacity-90 tracking-tight">
-              {isPlanned ? '本时段核心行动目标' : '心流记录与感悟'}
-            </label>
-            <textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder={isPlanned ? "例如：完成项目 UI 走查，解决对比度问题..." : "此刻的感觉如何？产出了多少价值？"}
-              className="w-full h-28 p-6 text-[16px] bg-black/[0.03] dark:bg-white/[0.05] border-2 border-transparent focus:border-[var(--primary-color)]/20 rounded-[32px] focus:outline-none focus:ring-4 focus:ring-[var(--primary-glow)] transition-all resize-none font-bold placeholder:text-gray-300 dark:placeholder:text-gray-600 leading-relaxed"
-            />
-          </div>
+          {/* 2. Energy Collection (Rating) */}
+          {!isPlanned && (
+            <div className="flex flex-col gap-5">
+              <div className="flex items-center justify-between">
+                <label className="text-[15px] font-black text-[var(--foreground)] opacity-90">能量收集</label>
+                <div className="text-[10px] font-black px-3 py-1 bg-[var(--primary-color)]/10 text-[var(--primary-color)] rounded-full uppercase tracking-widest border border-[var(--primary-color)]/10">Energy Matrix</div>
+              </div>
+              <div className="bg-black/[0.02] dark:bg-white/[0.03] p-8 rounded-[40px] border border-[var(--border-color)] flex justify-center shadow-inner">
+                <StarRating value={score} onChange={setScore} size={36} />
+              </div>
+            </div>
+          )}
 
-          {/* Tag Selector */}
+          {/* 3. Tag Selector (领域规置) */}
           <div className="flex flex-col gap-5">
-            <label className="text-[15px] font-black text-[var(--foreground)] opacity-90">领域归置</label>
+            <label className="text-[15px] font-black text-[var(--foreground)] opacity-90">领域规置</label>
             <div className="grid grid-cols-4 gap-4">
               {tags.map(tag => (
                 <button
@@ -255,17 +260,18 @@ export default function RecordModal({
             </div>
           </div>
 
-          {!isPlanned && (
-            <div className="flex flex-col gap-5">
-              <div className="flex items-center justify-between">
-                <label className="text-[15px] font-black text-[var(--foreground)] opacity-90">心流能量等级</label>
-                <div className="text-[10px] font-black px-3 py-1 bg-[var(--primary-color)]/10 text-[var(--primary-color)] rounded-full uppercase tracking-widest border border-[var(--primary-color)]/10">Energy Matrix</div>
-              </div>
-              <div className="bg-black/[0.02] dark:bg-white/[0.03] p-8 rounded-[40px] border border-[var(--border-color)] flex justify-center shadow-inner">
-                <StarRating value={score} onChange={setScore} size={36} />
-              </div>
-            </div>
-          )}
+          {/* 4. Content Input (心流记录与感悟) */}
+          <div className="flex flex-col gap-4">
+            <label className="text-[15px] font-black text-[var(--foreground)] opacity-90 tracking-tight">
+              {isPlanned ? '本时段核心行动目标' : '心流记录与感悟'}
+            </label>
+            <textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder={isPlanned ? "例如：完成项目 UI 走查，解决对比度问题..." : "此刻的感觉如何？产出了多少价值？"}
+              className="w-full h-28 p-6 text-[16px] bg-black/[0.03] dark:bg-white/[0.05] border-2 border-transparent focus:border-[var(--primary-color)]/20 rounded-[32px] focus:outline-none focus:ring-4 focus:ring-[var(--primary-glow)] transition-all resize-none font-bold placeholder:text-gray-300 dark:placeholder:text-gray-600 leading-relaxed"
+            />
+          </div>
         </div>
 
         {/* Footer */}

@@ -150,6 +150,9 @@ export default function DayGrid({ dateStr = "2026-03-16" }: DayGridProps) {
             const isCompleted = block?.status === 'completed';
             const tag = block ? getTagForBlock(block) : null;
             const isSleep = SLEEP_HOURS.includes(hourIdx);
+            const now = new Date();
+            const isToday = dateStr === now.toISOString().split('T')[0];
+            const isCurrentHour = isToday && hourIdx === now.getHours();
             
             return (
               <div 
@@ -157,7 +160,10 @@ export default function DayGrid({ dateStr = "2026-03-16" }: DayGridProps) {
                 onClick={() => handleCellClick(hourIdx)}
                 className={`group flex gap-4 sm:gap-6 cursor-pointer items-stretch ${isSleep ? 'opacity-60' : ''}`}
               >
-                <div className={`w-14 shrink-0 flex justify-end items-start text-[14px] font-black font-mono text-gray-200 dark:text-gray-800 group-hover:text-gray-400 dark:group-hover:text-gray-600 transition-colors pt-4 ${isSleep ? 'text-gray-100 dark:text-gray-900' : ''}`}>
+                <div className={`w-14 shrink-0 flex justify-end items-start text-[14px] font-black font-mono text-gray-200 dark:text-gray-800 group-hover:text-gray-400 dark:group-hover:text-gray-600 transition-colors pt-4 
+                  ${isSleep ? 'text-gray-100 dark:text-gray-900' : ''}
+                  ${isCurrentHour ? 'text-[var(--primary-color)] scale-110' : ''}
+                `}>
                   {hourIdx.toString().padStart(2, '0')}:00
                 </div>
 
@@ -172,6 +178,7 @@ export default function DayGrid({ dateStr = "2026-03-16" }: DayGridProps) {
                           : 'bg-black/[0.015] dark:bg-white/[0.015] hover:bg-black/[0.03] dark:hover:bg-white/[0.03] hover:scale-[1.005]'
                     }
                     ${isSelected ? 'ring-2 ring-offset-2 ring-[var(--primary-color)] dark:ring-offset-[#111] scale-[1.02] shadow-xl' : ''}
+                    ${isCurrentHour ? 'border-2 border-[var(--primary-color)] shadow-[0_0_15px_var(--primary-glow)] animate-spring' : ''}
                   `}
                   style={isCompleted && block.score !== 0 ? { 
                     backgroundColor: getScoreColor(block.score),

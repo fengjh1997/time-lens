@@ -1,21 +1,27 @@
 "use client";
 
+import { useState } from "react";
 import { useTimeStore, SCORE_ENERGY } from "@/store/timeStore";
 import { EnergyDisplay } from "@/components/ui/StarRating";
 import { Flame, TrendingUp, Clock, Zap, Award, Target } from "lucide-react";
 
-// In a real app these would be dynamic based on current week
-const WEEK_DATES = [
-  "2026-03-16", "2026-03-17", "2026-03-18",
-  "2026-03-19", "2026-03-20", "2026-03-21", "2026-03-22"
-];
 const DAY_NAMES = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
 
 export default function DashboardPage() {
   const { blocks, totalEnergy, tags, settings } = useTimeStore();
 
+  const [selectedTagId, setSelectedTagId] = useState<string | undefined>(tags[0]?.id);
+  const selectedTag = tags.find(t => t.id === selectedTagId);
+
+  // Generate dynamic week dates
+  const weekDates = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - d.getDay() + (d.getDay() === 0 ? -6 : 1) + i);
+    return d.toISOString().split('T')[0];
+  });
+
   // Daily energies
-  const dailyScores = WEEK_DATES.map(date => {
+  const dailyScores = weekDates.map(date => {
     const dayBlocks = Object.keys(blocks)
       .filter(key => key.startsWith(date))
       .map(key => blocks[key])
@@ -56,11 +62,20 @@ export default function DashboardPage() {
 
   const totalBlocks = Object.values(blocks).filter(b => b.status === 'completed').length;
 
+  // Generate last 30 days for heatmap
+  const last30Days = Array.from({ length: 30 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (29 - i));
+    return d.toISOString().split('T')[0];
+  });
+
   return (
     <div className="flex flex-col h-full bg-[var(--background)] overflow-y-auto pb-28 sm:pb-8">
       <header className="px-4 sm:px-8 py-6 border-b border-[var(--border-color)] sticky top-0 bg-[var(--background)]/80 backdrop-blur-md z-20">
         <h1 className="text-[20px] sm:text-[24px] font-black tracking-tight">数据洞察</h1>
-        <p className="text-[12px] text-gray-400 font-bold mt-1 tracking-widest uppercase">2026年3月 · 一周产出全分析</p>
+        <p className="text-[12px] text-gray-400 font-bold mt-1 tracking-widest uppercase">
+          {new Date().getMonth() + 1}月 · 产出全分析
+        </p>
       </header>
 
       <div className="flex-1 p-4 sm:p-8 space-y-6 sm:space-y-10 max-w-6xl mx-auto w-full">
@@ -69,7 +84,72 @@ export default function DashboardPage() {
           <SummaryCard icon={<Zap size={22} />} label="总能量值" value={<EnergyDisplay value={totalEnergy} />} isPrimary />
           <SummaryCard icon={<Flame size={22} />} label="连续打卡" value={`${currentStreak} 天`} accent="#f43f5e" />
           <SummaryCard icon={<Target size={22} />} label="总记录数" value={`${totalBlocks} 个块`} accent="#10b981" />
-          <SummaryCard icon={<Award size={22} />} label="本周最佳" value={DAY_NAMES[bestDayIdx]} accent="#8b5cf6" />
+          <SummaryCard icon={<Award size={22} />} label="本周最佳" value={DAY_NAMES[bestDayIdx] || '无'} accent="#8b5cf6" />
+        </div>
+
+        {/* Tag Specific Heatmap Section */}
+        <div className="bg-black/[0.02] dark:bg-white/[0.02] rounded-[32px] p-6 sm:p-8 border border-[var(--border-color)]">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
+            <div>
+              <h2 className="text-[17px] font-black flex items-center gap-2">
+                <Target size={18} className="text-[var(--primary-color)]" />
+                标签能量分布图
+              </h2>
+              <p className="text-[12px] text-gray-400 font-bold mt-1">查看特定领域的投射热力</p>
+            </div>
+            
+            <div className="flex gap-2 items-center bg-black/5 dark:bg-white/5 p-1.5 rounded-2xl overflow-x-auto no-scrollbar">
+              {tags.map(tag => (
+                <button
+                  key={tag.id}
+                  onClick={() => setSelectedTagId(tag.id)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[12px] font-black transition-all whitespace-nowrap
+                    ${selectedTagId === tag.id ? 'bg-white dark:bg-white/10 shadow-sm text-[var(--primary-color)]' : 'text-gray-400 opacity-60 hover:opacity-100'}
+                  `}
+                >
+                  <span>{tag.emoji}</span>
+                  <span>{tag.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-7 sm:grid-cols-10 md:grid-cols-15 lg:grid-cols-30 gap-2.5">
+            {last30Days.map(date => {
+              const dayBlocks = Object.values(blocks).filter(b => b.status === 'completed' && b.tagId === selectedTagId && b.id.startsWith(date));
+              const energy = dayBlocks.reduce((acc, b) => acc + SCORE_ENERGY[b.score], 0);
+              
+              const opacity = Math.min(energy / 4, 1); // Max 4 stars for max opacity
+              const isActive = energy > 0;
+
+              return (
+                <div key={date} className="relative group flex flex-col items-center">
+                  <div 
+                    className={`w-full aspect-square rounded-[8px] sm:rounded-[12px] transition-all hover:scale-110 border border-transparent
+                      ${!isActive ? 'bg-black/[0.03] dark:bg-white/[0.03]' : ''}
+                    `}
+                    style={isActive ? { 
+                      backgroundColor: selectedTag?.color || 'var(--primary-color)',
+                      opacity: 0.2 + (opacity * 0.8),
+                      borderColor: 'rgba(255,255,255,0.1)'
+                    } : {}}
+                  />
+                  <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-[var(--foreground)] text-[var(--background)] text-[10px] px-2.5 py-1.5 rounded-xl font-black z-50 pointer-events-none shadow-xl border border-white/10">
+                    {date}: {energy.toFixed(1)}★
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          
+          <div className="flex items-center justify-center gap-4 mt-8 opacity-40">
+             <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">活跃度</div>
+             <div className="flex gap-1.5">
+                {[0.2, 0.4, 0.6, 0.8, 1].map(op => (
+                   <div key={op} className="w-4 h-4 rounded-md" style={{ backgroundColor: selectedTag?.color || 'var(--primary-color)', opacity: op }} />
+                ))}
+             </div>
+          </div>
         </div>
 
         {/* Charts Section */}

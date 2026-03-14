@@ -136,15 +136,22 @@ export default function WeekGrid({ weekDates }: WeekGridProps) {
                   const isSleep = SLEEP_HOURS.includes(hourIdx);
                   const isPrimaryTheme = isCompleted && block.score !== 0 && block.score !== -1;
                   
+                  const now = new Date();
+                  const isCurrentHourCell = dateStr === now.toISOString().split('T')[0] && hourIdx === now.getHours();
+
                   return (
                     <div 
                       key={hourIdx} 
                       onClick={() => handleCellClick(dateStr, hourIdx)}
-                      className={`h-14 sm:h-16 relative group cursor-pointer p-[1px] sm:p-[2px] ${isSleep ? 'sleep-hour-bg' : ''}`}
+                      className={`h-14 sm:h-16 relative group cursor-pointer p-[1px] sm:p-[2px] 
+                        ${isSleep ? 'sleep-hour-bg' : ''}
+                        ${isCurrentHourCell ? 'z-20' : ''}
+                      `}
                     >
                       <div 
                         className={`w-full h-full rounded-[10px] sm:rounded-[14px] transition-all duration-500 relative overflow-hidden shadow-sm
                           ${isPlanned ? 'border-2 border-dashed border-[var(--primary-color)]/30 bg-[var(--primary-light)]' : ''}
+                          ${isCurrentHourCell ? 'ring-2 ring-inset ring-[var(--primary-color)] shadow-[0_0_10px_var(--primary-glow)]' : ''}
                         `}
                         style={isCompleted ? { backgroundColor: getScoreColor(block.score, block.status) } : {}}
                       >

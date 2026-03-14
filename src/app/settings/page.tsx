@@ -48,6 +48,8 @@ export default function SettingsPage() {
     const id = Date.now().toString();
     addTag({ id, name: newTagName, emoji: newTagEmoji, color: newTagColor });
     setNewTagName("");
+    // Sync to cloud
+    setTimeout(pushSettings, 100);
   };
 
   const handleExport = () => {
@@ -214,7 +216,7 @@ export default function SettingsPage() {
               {tags.map(tag => (
                 <div 
                   key={tag.id}
-                  className="group relative flex flex-col items-center gap-2 p-4 rounded-[22px] bg-white dark:bg-white/5 border border-[var(--border-color)] hover:shadow-xl hover:-translate-y-1 transition-all"
+                  className="group relative flex flex-col items-center gap-2 p-4 rounded-[22px] bg-black/[0.03] dark:bg-white/[0.05] border border-[var(--border-color)] hover:shadow-xl hover:-translate-y-1 transition-all"
                 >
                   {editingTagId === tag.id ? (
                     <input 
@@ -223,6 +225,7 @@ export default function SettingsPage() {
                       onBlur={(e) => {
                         updateTag({ ...tag, emoji: e.target.value });
                         setEditingTagId(null);
+                        setTimeout(pushSettings, 100);
                       }}
                       className="text-2xl w-10 h-10 bg-black/5 rounded-xl text-center focus:outline-none"
                       autoFocus
@@ -240,7 +243,10 @@ export default function SettingsPage() {
                     {tag.name}
                   </span>
                   <button 
-                    onClick={() => removeTag(tag.id)}
+                    onClick={() => {
+                      removeTag(tag.id);
+                      setTimeout(pushSettings, 100);
+                    }}
                     className="absolute -top-1 -right-1 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
                   >
                     <Trash2 size={10} />
@@ -301,11 +307,11 @@ export default function SettingsPage() {
           <SectionHeader icon={<RotateCcw size={18} />} title="数据管护" />
           <div className="bg-black/[0.02] dark:bg-white/[0.02] rounded-[32px] p-6 border border-[var(--border-color)] space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <button onClick={handleExport} className="flex items-center justify-center gap-3 py-3 rounded-2xl bg-white dark:bg-white/5 border border-[var(--border-color)] hover:shadow-lg transition-all">
+              <button onClick={handleExport} className="flex items-center justify-center gap-3 py-3 rounded-2xl bg-black/[0.03] dark:bg-white/[0.05] border border-[var(--border-color)] hover:shadow-lg transition-all text-[var(--foreground)]">
                 <Download size={16} className="text-[var(--primary-color)]" />
                 <span className="text-[13px] font-black">导出备份</span>
               </button>
-              <label className="flex items-center justify-center gap-3 py-3 rounded-2xl bg-white dark:bg-white/5 border border-[var(--border-color)] hover:shadow-lg transition-all cursor-pointer">
+              <label className="flex items-center justify-center gap-3 py-3 rounded-2xl bg-black/[0.03] dark:bg-white/[0.05] border border-[var(--border-color)] hover:shadow-lg transition-all cursor-pointer text-[var(--foreground)]">
                 <Upload size={16} className="text-[var(--primary-color)]" />
                 <span className="text-[13px] font-black">导入备份</span>
                 <input type="file" className="hidden" accept=".json" onChange={handleImport} />
