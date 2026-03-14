@@ -12,11 +12,14 @@ import {
   Sparkles,
   User,
   LogOut,
-  ChevronUp
+  ChevronUp,
+  ArrowRight
 } from "lucide-react";
 import { useTimeStore } from "@/store/timeStore";
+import { useAuthStore } from "@/store/authStore";
 import { EnergyDisplay } from "@/components/ui/StarRating";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 const NAV_ITEMS = [
   { icon: Compass, label: "一周规划", href: "/" },
@@ -28,8 +31,16 @@ const NAV_ITEMS = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { totalEnergy } = useTimeStore();
+  const { user, profile, signOut } = useAuthStore();
   const [showUserMenu, setShowUserMenu] = useState(false);
+
+  const handleSignOut = async () => {
+    await signOut();
+    setShowUserMenu(false);
+    router.push("/auth");
+  };
 
   return (
     <div className="w-[260px] h-full bg-[var(--background)] border-r border-[var(--border-color)] hidden sm:flex flex-col p-6 transition-colors duration-300">
@@ -87,30 +98,56 @@ export default function Sidebar() {
 
       {/* User Section */}
       <div className="pt-6 border-t border-[var(--border-color)] relative">
-        <button 
-          onClick={() => setShowUserMenu(!showUserMenu)}
-          className="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-[var(--hover-bg)] transition-all group"
-        >
-          <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center text-gray-500 dark:text-gray-400">
-            <User size={20} />
-          </div>
-          <div className="flex-1 text-left min-w-0">
-            <p className="text-[13px] font-black truncate">访客用户</p>
-            <p className="text-[10px] text-gray-400 font-bold">Standard Edition</p>
-          </div>
-          <ChevronUp size={16} className={`text-gray-400 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
-        </button>
+        {user ? (
+          <>
+            <button 
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              className="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-[var(--hover-bg)] transition-all group"
+            >
+              <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[var(--primary-color)]/20 to-[var(--primary-color)]/10 flex items-center justify-center text-[var(--primary-color)] overflow-hidden">
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <User size={20} />
+                )}
+              </div>
+              <div className="flex-1 text-left min-w-0">
+                <p className="text-[13px] font-black truncate text-[var(--foreground)]">{profile?.full_name || user.email?.split('@')[0] || "已登录用户"}</p>
+                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Cloud Sync Active</p>
+              </div>
+              <ChevronUp size={16} className={`text-gray-400 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
+            </button>
 
-        {/* Popover User Menu */}
-        {showUserMenu && (
-          <div className="absolute bottom-full left-0 w-full mb-2 p-2 bg-[var(--modal-bg)] backdrop-blur-xl border border-[var(--border-color)] rounded-[24px] shadow-2xl animate-spring z-50">
-             <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--hover-bg)] transition-all text-[13px] font-black text-gray-600 dark:text-gray-300">
-               <User size={16} /> 个人中心 (待开放)
-             </button>
-             <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/20 text-red-500 transition-all text-[13px] font-black">
-               <LogOut size={16} /> 登出账号
-             </button>
-          </div>
+            {/* Popover User Menu */}
+            {showUserMenu && (
+              <div className="absolute bottom-full left-0 w-full mb-3 p-2 bg-[var(--modal-bg)] backdrop-blur-xl border border-[var(--border-color)] rounded-[24px] shadow-2xl animate-spring z-50">
+                <p className="px-4 py-2 text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 border-b border-[var(--border-color)] pb-2 mx-1">账户管理</p>
+                <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--hover-bg)] transition-all text-[13px] font-black text-gray-600 dark:text-gray-300">
+                  <User size={16} /> 个人中心 (待开放)
+                </button>
+                <button 
+                  onClick={handleSignOut}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/20 text-red-500 transition-all text-[13px] font-black"
+                >
+                  <LogOut size={16} /> 登出账号
+                </button>
+              </div>
+            )}
+          </>
+        ) : (
+          <Link
+            href="/auth"
+            className="w-full flex items-center gap-3 p-3 rounded-2xl bg-[var(--primary-light)] text-[var(--primary-color)] hover:brightness-105 transition-all group border border-[var(--primary-color)]/10"
+          >
+            <div className="w-10 h-10 rounded-full bg-[var(--primary-color)]/10 flex items-center justify-center">
+              <User size={20} />
+            </div>
+            <div className="flex-1 text-left">
+              <p className="text-[13px] font-black">访客模式</p>
+              <p className="text-[10px] font-bold opacity-70">点击登录同步云端</p>
+            </div>
+            <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+          </Link>
         )}
       </div>
     </div>

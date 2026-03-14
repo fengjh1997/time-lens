@@ -4,6 +4,7 @@ import "./globals.css";
 import Sidebar from "@/components/layout/sidebar";
 import MobileNav from "@/components/layout/MobileNav";
 import ThemeProvider from "@/components/layout/ThemeProvider";
+import AuthProvider from "@/components/layout/AuthProvider";
 
 const outfit = Outfit({ subsets: ["latin"] });
 
@@ -18,17 +19,23 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh">
+    <html lang="zh" suppressHydrationWarning>
       <body className={`${outfit.className} antialiased bg-[var(--background)] text-[var(--foreground)]`}>
-        <ThemeProvider>
-          <div className="flex h-screen overflow-hidden">
-            <Sidebar />
-            <main className="flex-1 min-w-0 overflow-hidden relative">
-              {children}
-            </main>
-            <MobileNav />
-          </div>
-        </ThemeProvider>
+        <AuthProvider>
+          <ThemeProvider>
+            <div className="ambient-bg">
+              <div className="ambient-blob-1" />
+              <div className="ambient-blob-2" />
+            </div>
+            <div className="flex h-screen overflow-hidden relative">
+              <Sidebar />
+              <main className="flex-1 min-w-0 overflow-hidden relative">
+                {children}
+              </main>
+              <MobileNav />
+            </div>
+          </ThemeProvider>
+        </AuthProvider>
       </body>
     </html>
   );

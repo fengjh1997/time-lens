@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useTimeStore } from "@/store/timeStore";
+import { useAuthStore } from "@/store/authStore";
+import { useSync } from "@/hooks/useSync";
 import { type PrimaryColor } from "@/types";
 import { 
   Trash2, 
@@ -17,8 +19,11 @@ import {
   Star as StarIcon,
   Palette,
   Cloud,
-  Check
+  Check,
+  ShieldCheck,
+  Link as LinkIcon
 } from "lucide-react";
+import Link from "next/link";
 
 const PRIMARY_COLORS: { id: PrimaryColor, color: string, name: string }[] = [
   { id: 'amber', color: '#f59e0b', name: '琥珀金' },
@@ -29,6 +34,8 @@ const PRIMARY_COLORS: { id: PrimaryColor, color: string, name: string }[] = [
 
 export default function SettingsPage() {
   const { tags, addTag, removeTag, updateTag, settings, updateSettings, toggleTheme, exportData, importData, clearAllData } = useTimeStore();
+  const { user, profile } = useAuthStore();
+  const { pushSettings } = useSync();
   
   const [newTagName, setNewTagName] = useState("");
   const [newTagEmoji, setNewTagEmoji] = useState("✨");
@@ -88,13 +95,19 @@ export default function SettingsPage() {
               </div>
               <div className="flex bg-black/[0.05] dark:bg-white/10 p-1 rounded-full">
                 <button 
-                  onClick={() => updateSettings({ theme: 'light' })}
+                  onClick={() => {
+                    updateSettings({ theme: 'light' });
+                    setTimeout(pushSettings, 100);
+                  }}
                   className={`flex items-center gap-2 px-4 py-2 rounded-full text-[12px] font-black transition-all ${settings.theme === 'light' ? 'bg-white dark:bg-white/10 shadow-sm text-[var(--primary-color)]' : 'text-gray-400'}`}
                 >
                   <Sun size={14} /> 明亮
                 </button>
                 <button 
-                  onClick={() => updateSettings({ theme: 'dark' })}
+                  onClick={() => {
+                    updateSettings({ theme: 'dark' });
+                    setTimeout(pushSettings, 100);
+                  }}
                   className={`flex items-center gap-2 px-4 py-2 rounded-full text-[12px] font-black transition-all ${settings.theme === 'dark' ? 'bg-white dark:bg-white/10 shadow-sm text-[var(--primary-color)]' : 'text-gray-400'}`}
                 >
                   <Moon size={14} /> 深色
@@ -109,7 +122,10 @@ export default function SettingsPage() {
                 {PRIMARY_COLORS.map(color => (
                   <button
                     key={color.id}
-                    onClick={() => updateSettings({ primaryColor: color.id })}
+                    onClick={() => {
+                      updateSettings({ primaryColor: color.id });
+                      setTimeout(pushSettings, 100);
+                    }}
                     className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl border transition-all hover:scale-[1.05] active:scale-95
                       ${settings.primaryColor === color.id 
                         ? 'border-[var(--primary-color)] bg-[var(--primary-light)]' 
@@ -129,20 +145,65 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        {/* Cloud Sync Placeholder */}
+        {/* Cloud Sync Section */}
         <section className="space-y-4">
-          <SectionHeader icon={<Cloud size={18} />} title="多端同步 (敬请期待)" />
-          <div className="bg-gradient-to-br from-[var(--primary-color)] to-[var(--primary-color)]/70 rounded-[32px] p-6 text-white shadow-xl shadow-[var(--primary-glow)] relative overflow-hidden group">
-             <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-125 transition-transform duration-700">
-               <Cloud size={120} />
-             </div>
-             <p className="text-[11px] font-black opacity-80 uppercase tracking-widest">Cloud Sync</p>
-             <h3 className="text-xl font-black mt-1">跨端同步架构即将开启</h3>
-             <p className="text-[12px] font-bold mt-2 opacity-90 max-w-[280px]">使用 Supabase 强力驱动，支持多电脑与手机实时同步，让你的心流数据永不丢失。</p>
-             <button className="mt-6 px-6 py-2.5 bg-white text-[var(--primary-color)] rounded-full text-[13px] font-black hover:scale-105 active:scale-95 transition-all opacity-50 cursor-not-allowed">
-               即将上线...
-             </button>
-          </div>
+          <SectionHeader icon={<Cloud size={18} />} title="云端同步状态" />
+          {user ? (
+            <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-[32px] p-7 text-white shadow-xl shadow-emerald-500/20 relative overflow-hidden group">
+               <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-125 transition-transform duration-700">
+                 <ShieldCheck size={120} />
+               </div>
+               <div className="flex items-center gap-4 mb-4">
+                 <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center">
+                   <Cloud size={24} />
+                 </div>
+                 <div>
+                   <p className="text-[11px] font-black opacity-80 uppercase tracking-widest">Cloud Connected</p>
+                   <h3 className="text-xl font-black">云端同步已开启</h3>
+                 </div>
+               </div>
+               <p className="text-[12px] font-bold opacity-90 leading-relaxed">
+                 欢迎回来，<span className="underline decoration-2 underline-offset-4">{profile?.full_name || user.email}</span>！您的所有记录与设置已通过 Supabase 安全加密并实时同步。
+               </p>
+               <div className="mt-6 flex gap-3">
+                 <button className="px-5 py-2 bg-white/20 backdrop-blur-md rounded-full text-[12px] font-black hover:bg-white/30 transition-all flex items-center gap-2">
+                   <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                   服务运行中
+                 </button>
+                 <button 
+                  onClick={() => location.reload()}
+                  className="px-5 py-2 bg-black/10 rounded-full text-[12px] font-black hover:bg-black/20 transition-all flex items-center gap-2"
+                 >
+                   <RotateCcw size={14} />
+                   强制拉取刷新
+                 </button>
+               </div>
+            </div>
+          ) : (
+            <div className="bg-gradient-to-br from-[var(--primary-color)] to-[var(--primary-color)]/70 rounded-[32px] p-7 text-white shadow-xl shadow-[var(--primary-glow)] relative overflow-hidden group">
+               <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-125 transition-transform duration-700">
+                 <Cloud size={120} />
+               </div>
+               <div className="flex items-center gap-4 mb-4">
+                 <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center">
+                   <LinkIcon size={24} />
+                 </div>
+                 <div>
+                   <p className="text-[11px] font-black opacity-80 uppercase tracking-widest">Cloud Sync</p>
+                   <h3 className="text-xl font-black">登录以开启云端同步</h3>
+                 </div>
+               </div>
+               <p className="text-[12px] font-bold opacity-90 max-w-[320px]">
+                 使用 Supabase 强力驱动，支持多设备实时同步，让您的打卡数据在不同电脑与手机间自由流动。
+               </p>
+               <Link 
+                href="/auth"
+                className="inline-flex mt-6 px-8 py-3 bg-white text-[var(--primary-color)] rounded-full text-[14px] font-black hover:scale-105 active:scale-95 transition-all shadow-lg"
+               >
+                 立即登录 / 注册
+               </Link>
+            </div>
+          )}
         </section>
 
         {/* Tag Management */}
@@ -210,7 +271,10 @@ export default function SettingsPage() {
                    <p className="text-[12px] text-gray-400 font-bold">隐藏 23:00 - 09:00 (仅设置页可开启)</p>
                 </div>
                 <button 
-                  onClick={() => updateSettings({ hideSleepTime: !settings.hideSleepTime })}
+                  onClick={() => {
+                    updateSettings({ hideSleepTime: !settings.hideSleepTime });
+                    setTimeout(pushSettings, 100);
+                  }}
                   className={`w-12 h-6 rounded-full relative transition-colors ${settings.hideSleepTime ? 'bg-[var(--primary-color)]' : 'bg-gray-300 dark:bg-gray-700'}`}
                 >
                   <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${settings.hideSleepTime ? 'left-7' : 'left-1'}`} />
@@ -260,9 +324,9 @@ export default function SettingsPage() {
         <div className="text-center pb-20 opacity-30">
           <div className="flex items-center justify-center gap-2 mb-2">
             <StarIcon size={14} fill="currentColor" />
-            <span className="text-[11px] font-black tracking-widest uppercase">Time Lens v6.0.0 Alpha</span>
+            <span className="text-[11px] font-black tracking-widest uppercase">Time Lens v6.1.0 Stable</span>
           </div>
-          <p className="text-[10px] font-bold">Developed with ❤️ by Antigravity</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest">Enhanced with Cloud Sync & UI Harmony</p>
         </div>
       </div>
     </div>

@@ -6,6 +6,7 @@ import { useTimeStore, SCORE_ENERGY } from "@/store/timeStore";
 import { MiniStarDisplay, EnergyDisplay } from "@/components/ui/StarRating";
 import RecordModal from "./RecordModal";
 import { CheckCircle, Clock, Sparkles, Plus } from "lucide-react";
+import { useSync } from "@/hooks/useSync";
 
 function getScoreColor(score?: Score) {
   if (score === undefined) return "var(--score-empty)";
@@ -29,6 +30,7 @@ interface DayGridProps {
 
 export default function DayGrid({ dateStr = "2026-03-16" }: DayGridProps) {
   const { blocks, saveBlock, deleteBlock, getBlocksForDate, getDayEnergy, tags, settings } = useTimeStore();
+  const { pushBlock, deleteCloudBlock } = useSync();
   const [selectedHour, setSelectedHour] = useState<number | string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -50,10 +52,12 @@ export default function DayGrid({ dateStr = "2026-03-16" }: DayGridProps) {
 
   const handleSaveBlock = (block: TimeBlock) => {
     saveBlock(dateStr, block);
+    pushBlock(block, dateStr);
   };
 
   const handleDeleteBlock = (id: string) => {
     deleteBlock(dateStr, id);
+    deleteCloudBlock(id);
     setIsModalOpen(false);
   };
 

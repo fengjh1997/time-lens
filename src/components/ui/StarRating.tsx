@@ -23,7 +23,9 @@ const SCORE_DISPLAY: Record<Score, { label: string; shortLabel: string }> = {
   "1": { label: "心流状态", shortLabel: "★" },
 };
 
-function StarIcon({ fill = 0, broken = false, size = 24, glow = false }: { fill?: number; broken?: boolean; size?: number; glow?: boolean }) {
+function StarIcon({ fill = 0, broken = false, size = 24, glow = false, color }: { fill?: number; broken?: boolean; size?: number; glow?: boolean; color?: string }) {
+  const starColor = color || "var(--primary-color)";
+  
   if (broken) {
     return (
       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -49,7 +51,7 @@ function StarIcon({ fill = 0, broken = false, size = 24, glow = false }: { fill?
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       {glow && (
         <filter id="star-glow">
-          <feGaussianBlur stdDeviation="2" result="blur" />
+          <feGaussianBlur stdDeviation="2.5" result="blur" />
           <feMerge>
             <feMergeNode in="blur" />
             <feMergeNode in="SourceGraphic" />
@@ -66,19 +68,19 @@ function StarIcon({ fill = 0, broken = false, size = 24, glow = false }: { fill?
       </defs>
       <path 
         d={STAR_PATH} 
-        fill="#f59e0b" 
+        fill={starColor} 
         clipPath={`url(#${clipId})`}
         filter={glow ? "url(#star-glow)" : undefined}
       />
-      <path d={STAR_PATH} fill="none" stroke="#f59e0b" strokeWidth={1} opacity={0.4} />
+      <path d={STAR_PATH} fill="none" stroke={starColor} strokeWidth={1} opacity={0.4} />
     </svg>
   );
 }
 
 export default function StarRating({ value, onChange, size = 32, interactive = true }: StarRatingProps) {
   return (
-    <div className="flex flex-col gap-3">
-      <div className="grid grid-cols-6 gap-2">
+    <div className="flex flex-col gap-4">
+      <div className="grid grid-cols-6 gap-3">
         {SCORES.map(score => {
           const isSelected = value === score;
           const display = SCORE_DISPLAY[score];
@@ -89,10 +91,10 @@ export default function StarRating({ value, onChange, size = 32, interactive = t
               type="button"
               disabled={!interactive}
               onClick={() => onChange?.(score)}
-              className={`flex flex-col items-center gap-1.5 py-3 px-1 rounded-2xl transition-all duration-300 ease-out
+              className={`flex flex-col items-center gap-2 py-4 px-1 rounded-[24px] transition-all duration-500 ease-out
                 ${isSelected 
-                  ? 'bg-amber-50 dark:bg-amber-950/30 ring-2 ring-amber-400 dark:ring-amber-600 scale-[1.08] shadow-md shadow-amber-200/30 dark:shadow-amber-900/30' 
-                  : 'bg-black/[0.02] dark:bg-white/[0.03] hover:bg-black/[0.05] dark:hover:bg-white/[0.06] hover:scale-[1.04] opacity-60 hover:opacity-100'
+                  ? 'bg-[var(--primary-light)] ring-2 ring-[var(--primary-color)] scale-[1.1] shadow-xl shadow-[var(--primary-glow)] z-10' 
+                  : 'bg-black/[0.03] dark:bg-white/[0.05] hover:bg-black/[0.06] dark:hover:bg-white/[0.08] hover:scale-[1.05] opacity-50 hover:opacity-100'
                 }
               `}
             >
@@ -102,7 +104,7 @@ export default function StarRating({ value, onChange, size = 32, interactive = t
                 size={size}
                 glow={isSelected && score === 1}
               />
-              <span className={`text-[11px] font-bold tracking-tight ${isSelected ? 'text-amber-600 dark:text-amber-400' : 'text-gray-400'}`}>
+              <span className={`text-[12px] font-black tracking-tight ${isSelected ? 'text-[var(--primary-color)]' : 'text-gray-400'}`}>
                 {display.shortLabel}
               </span>
             </button>
@@ -111,11 +113,11 @@ export default function StarRating({ value, onChange, size = 32, interactive = t
       </div>
       
       {/* Selected label */}
-      <div className="text-center">
-        <span className="text-[13px] font-bold text-gray-500 bg-black/[0.03] dark:bg-white/[0.05] px-3 py-1 rounded-full">
+      <div className="flex justify-center">
+        <span className="text-[12px] font-black text-gray-400 bg-black/[0.03] dark:bg-white/[0.05] border border-[var(--border-color)] px-4 py-1.5 rounded-full tracking-wider uppercase">
           {SCORE_DISPLAY[value].label}
-          {value > 0 && ` (+${value})`}
-          {value === -1 && " (-1)"}
+          {value > 0 && ` (+${value}★)`}
+          {value === -1 && " (-1★)"}
         </span>
       </div>
     </div>
@@ -123,20 +125,18 @@ export default function StarRating({ value, onChange, size = 32, interactive = t
 }
 
 // Mini star for inline display (e.g. in grid cells)
-export function MiniStarDisplay({ score, size = 14 }: { score: Score; size?: number }) {
-  if (score === -1) return <StarIcon broken size={size} />;
-  if (score === 0) return <StarIcon fill={0} size={size} />;
-  return <StarIcon fill={score} size={size} />;
+export function MiniStarDisplay({ score, size = 14, color }: { score: Score; size?: number; color?: string }) {
+  if (score === -1) return <StarIcon broken size={size} color={color} />;
+  if (score === 0) return <StarIcon fill={0} size={size} color={color} />;
+  return <StarIcon fill={score} size={size} color={color} />;
 }
 
 export function EnergyDisplay({ value, decimals = 1 }: { value: number; decimals?: number }) {
   const display = decimals === 0 ? Math.round(value).toString() : value.toFixed(decimals);
   return (
-    <span className="inline-flex items-center gap-1.5">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
-        <path d={STAR_PATH} />
-      </svg>
-      <span className="font-black tabular-nums">{display}</span>
+    <span className="inline-flex items-center gap-2">
+      <StarIcon fill={1} size={18} />
+      <span className="font-black tabular-nums tracking-tight">{display}</span>
     </span>
   );
 }
