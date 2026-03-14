@@ -13,13 +13,21 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
 
   useEffect(() => {
     if (mounted) {
+      const root = document.documentElement;
+      
+      // Theme Management
       if (settings.theme === 'dark') {
-        document.documentElement.classList.add('dark');
+        root.classList.add('dark');
       } else {
-        document.documentElement.classList.remove('dark');
+        root.classList.remove('dark');
       }
+
+      // Primary Color Management
+      const colorClasses = ['theme-amber', 'theme-emerald', 'theme-violet', 'theme-blue'];
+      root.classList.remove(...colorClasses);
+      root.classList.add(`theme-${settings.primaryColor}`);
     }
-  }, [settings.theme, mounted]);
+  }, [settings.theme, settings.primaryColor, mounted]);
 
   // Prevent flash of unstyled content
   if (!mounted) return <>{children}</>;

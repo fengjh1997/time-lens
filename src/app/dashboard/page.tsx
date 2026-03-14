@@ -1,9 +1,10 @@
 "use client";
 
-import { useTimeStore, SCORE_ENERGY, DEFAULT_TAGS } from "@/store/timeStore";
+import { useTimeStore, SCORE_ENERGY } from "@/store/timeStore";
 import { EnergyDisplay } from "@/components/ui/StarRating";
 import { Flame, TrendingUp, Clock, Zap, Award, Target } from "lucide-react";
 
+// In a real app these would be dynamic based on current week
 const WEEK_DATES = [
   "2026-03-16", "2026-03-17", "2026-03-18",
   "2026-03-19", "2026-03-20", "2026-03-21", "2026-03-22"
@@ -46,6 +47,7 @@ export default function DashboardPage() {
   let currentStreak = 0;
   for (let i = dailyScores.length - 1; i >= 0; i--) {
     if (dailyScores[i].energy > 0) currentStreak++;
+    else if (dailyScores[i].count === 0 && i === dailyScores.length - 1) continue; // skip today if empty
     else break;
   }
 
@@ -56,51 +58,63 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col h-full bg-[var(--background)] overflow-y-auto pb-28 sm:pb-8">
-      <header className="px-4 sm:px-8 py-4 sm:py-5 border-b border-[#e5e5e5] dark:border-[#333333] sticky top-0 bg-[var(--background)] z-20">
-        <h1 className="text-lg sm:text-[22px] font-bold tracking-tight">数据洞察</h1>
-        <p className="text-[12px] sm:text-[13px] text-gray-400 mt-1 font-medium">2026年3月16日 - 3月22日 · 一周数据概览</p>
+      <header className="px-4 sm:px-8 py-6 border-b border-[var(--border-color)] sticky top-0 bg-[var(--background)]/80 backdrop-blur-md z-20">
+        <h1 className="text-[20px] sm:text-[24px] font-black tracking-tight">数据洞察</h1>
+        <p className="text-[12px] text-gray-400 font-bold mt-1 tracking-widest uppercase">2026年3月 · 一周产出全分析</p>
       </header>
 
-      <div className="flex-1 p-4 sm:p-8 space-y-5 sm:space-y-8 max-w-5xl mx-auto w-full">
+      <div className="flex-1 p-4 sm:p-8 space-y-6 sm:space-y-10 max-w-6xl mx-auto w-full">
         {/* Summary Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-          <SummaryCard icon={<Zap size={18} />} label="总能量值" value={<EnergyDisplay value={totalEnergy} decimals={settings.decimalPlaces} />} accent="#f59e0b" />
-          <SummaryCard icon={<Flame size={18} />} label="连续打卡" value={`${currentStreak} 天`} accent="#ef4444" />
-          <SummaryCard icon={<Target size={18} />} label="已完成" value={`${totalBlocks}`} accent="#2563eb" />
-          <SummaryCard icon={<Award size={18} />} label="最佳日" value={DAY_NAMES[bestDayIdx]} accent="#7c3aed" />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+          <SummaryCard icon={<Zap size={22} />} label="总能量值" value={<EnergyDisplay value={totalEnergy} />} isPrimary />
+          <SummaryCard icon={<Flame size={22} />} label="连续打卡" value={`${currentStreak} 天`} accent="#f43f5e" />
+          <SummaryCard icon={<Target size={22} />} label="总记录数" value={`${totalBlocks} 个块`} accent="#10b981" />
+          <SummaryCard icon={<Award size={22} />} label="本周最佳" value={DAY_NAMES[bestDayIdx]} accent="#8b5cf6" />
         </div>
 
-        {/* Chart + Tags */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 sm:gap-6">
-          <div className="lg:col-span-3 bg-black/[0.02] dark:bg-white/[0.02] rounded-[20px] p-5 sm:p-6 border border-white/30 dark:border-white/5">
-            <h2 className="text-[15px] sm:text-[16px] font-bold mb-1">能量值走势</h2>
-            <p className="text-[11px] sm:text-[12px] text-gray-400 font-medium mb-5 sm:mb-6">本周每日累计能量</p>
-            <div className="flex items-end justify-between gap-2 sm:gap-3 h-36 sm:h-44">
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 sm:gap-8">
+          {/* Main Trend Chart */}
+          <div className="lg:col-span-3 bg-black/[0.02] dark:bg-white/[0.02] rounded-[32px] p-6 sm:p-8 border border-[var(--border-color)]">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="text-[17px] font-black">能量产出趋势</h2>
+                <p className="text-[12px] text-gray-400 font-bold mt-1">本周每日累计星数</p>
+              </div>
+            </div>
+            <div className="flex items-end justify-between gap-3 h-48 sm:h-56">
               {dailyScores.map((day, i) => {
                 const height = Math.abs(day.energy) / maxDailyEnergy * 100;
                 const isNeg = day.energy < 0;
                 return (
-                  <div key={day.date} className="flex-1 flex flex-col items-center gap-1.5 sm:gap-2">
-                    <span className={`text-[11px] sm:text-[13px] font-black ${isNeg ? 'text-red-500' : 'text-amber-500'}`}>
-                      {day.energy > 0 ? '+' : ''}{day.energy.toFixed(settings.decimalPlaces)}
+                  <div key={day.date} className="flex-1 flex flex-col items-center gap-3">
+                    <span className={`text-[12px] font-black ${isNeg ? 'text-red-500' : 'text-[var(--primary-color)]'}`}>
+                      {day.energy > 0 ? '+' : ''}{day.energy.toFixed(1)}
                     </span>
                     <div className="w-full flex justify-center">
                       <div 
-                        className={`w-full max-w-[48px] rounded-xl transition-all duration-500 ${isNeg ? 'bg-red-400/40' : 'bg-gradient-to-t from-amber-500 to-amber-300'}`}
+                        className={`w-full max-w-[42px] rounded-2xl transition-all duration-700 relative group
+                          ${isNeg ? 'bg-red-400/30' : 'bg-gradient-to-t from-[var(--primary-color)] to-[var(--primary-color)]/60 shadow-lg shadow-[var(--primary-glow)]'}
+                        `}
                         style={{ height: `${Math.max(height, 8)}%`, minHeight: '12px' }}
-                      />
+                      >
+                         <div className="absolute inset-x-0 -top-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-black text-white text-[10px] px-2 py-1 rounded pointer-events-none">
+                            {day.count} 个记录
+                         </div>
+                      </div>
                     </div>
-                    <span className="text-[10px] sm:text-[11px] text-gray-400 font-bold">{DAY_NAMES[i]}</span>
+                    <span className="text-[11px] text-gray-400 font-black uppercase tracking-tighter">{DAY_NAMES[i]}</span>
                   </div>
                 );
               })}
             </div>
           </div>
 
-          <div className="lg:col-span-2 bg-black/[0.02] dark:bg-white/[0.02] rounded-[20px] p-5 sm:p-6 border border-white/30 dark:border-white/5">
-            <h2 className="text-[15px] sm:text-[16px] font-bold mb-1">时间投资分布</h2>
-            <p className="text-[11px] sm:text-[12px] text-gray-400 font-medium mb-4 sm:mb-5">按标签归类</p>
-            <div className="space-y-3">
+          {/* Tag Distribution */}
+          <div className="lg:col-span-2 bg-black/[0.02] dark:bg-white/[0.02] rounded-[32px] p-6 sm:p-8 border border-[var(--border-color)]">
+            <h2 className="text-[17px] font-black mb-1">时间投资矩阵</h2>
+            <p className="text-[12px] text-gray-400 font-bold mb-8">按任务标签权重</p>
+            <div className="space-y-6">
               {tags
                 .filter(tag => tagCounts[tag.id])
                 .sort((a, b) => (tagCounts[b.id] || 0) - (tagCounts[a.id] || 0))
@@ -108,16 +122,19 @@ export default function DashboardPage() {
                   const count = tagCounts[tag.id] || 0;
                   const pct = totalTagged > 0 ? Math.round((count / totalTagged) * 100) : 0;
                   return (
-                    <div key={tag.id} className="flex items-center gap-3">
-                      <span className="text-base sm:text-lg w-6 sm:w-7 text-center">{tag.emoji}</span>
-                      <div className="flex-1">
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="text-[12px] sm:text-[13px] font-bold">{tag.name}</span>
-                          <span className="text-[10px] sm:text-[11px] text-gray-400 font-semibold">{count}h · {pct}%</span>
+                    <div key={tag.id} className="group">
+                      <div className="flex justify-between items-center mb-2">
+                        <div className="flex items-center gap-3">
+                           <span className="text-xl">{tag.emoji}</span>
+                           <span className="text-[13px] font-black">{tag.name}</span>
                         </div>
-                        <div className="w-full h-2 sm:h-2.5 bg-black/5 dark:bg-white/5 rounded-full overflow-hidden">
-                          <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, backgroundColor: tag.color }} />
-                        </div>
+                        <span className="text-[11px] font-black text-gray-400">{count}h · {pct}%</span>
+                      </div>
+                      <div className="w-full h-2.5 bg-black/5 dark:bg-white/5 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full rounded-full transition-all duration-1000 origin-left" 
+                          style={{ width: `${pct}%`, backgroundColor: tag.color }} 
+                        />
                       </div>
                     </div>
                   );
@@ -126,37 +143,39 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Hourly Heatmap */}
-        <div className="bg-black/[0.02] dark:bg-white/[0.02] rounded-[20px] p-5 sm:p-6 border border-white/30 dark:border-white/5">
-          <div className="flex items-center justify-between mb-4 sm:mb-5">
+        {/* Hourly Golden Hour Heatmap */}
+        <div className="bg-black/[0.02] dark:bg-white/[0.02] rounded-[32px] p-6 sm:p-8 border border-[var(--border-color)]">
+          <div className="flex items-center justify-between mb-8">
             <div>
-              <h2 className="text-[15px] sm:text-[16px] font-bold flex items-center gap-2">
-                <Clock size={16} className="text-gray-400" />
-                黄金时段分析
+              <h2 className="text-[17px] font-black flex items-center gap-2">
+                <Clock size={18} className="text-[var(--primary-color)]" />
+                黄金产出时段
               </h2>
-              <p className="text-[11px] sm:text-[12px] text-gray-400 font-medium mt-1">
-                你在 <span className="font-bold text-[var(--foreground)]">{bestHour}:00</span> 的产出最高
+              <p className="text-[12px] text-gray-400 font-bold mt-1">
+                你在 <span className="text-[var(--primary-color)] font-black">{bestHour}:00</span> 表现最为卓越
               </p>
             </div>
           </div>
-          <div className="grid grid-cols-12 gap-1 sm:gap-1.5">
+          <div className="grid grid-cols-6 sm:grid-cols-12 md:grid-cols-24 gap-2">
             {Array.from({ length: 24 }, (_, i) => {
               const e = hourlyEnergy[i];
               const opacity = maxHourlyEnergy > 0 ? Math.max(e / maxHourlyEnergy, 0) : 0;
               const isActive = hourlyCounts[i] > 0;
               return (
-                <div key={i} className="flex flex-col items-center gap-0.5 sm:gap-1">
+                <div key={i} className="flex flex-col items-center gap-2">
                   <div 
-                    className={`w-full aspect-square rounded-md sm:rounded-lg transition-all ${!isActive ? 'bg-gray-100 dark:bg-gray-800' : ''}`}
+                    className={`w-full aspect-square rounded-[10px] transition-all hover:scale-110 
+                      ${!isActive ? 'bg-black/[0.05] dark:bg-white/[0.05]' : 'shadow-lg shadow-[var(--primary-glow)]'}
+                    `}
                     style={isActive ? { 
                       backgroundColor: e >= 0 
-                        ? `rgba(245, 158, 11, ${0.15 + opacity * 0.85})`
-                        : `rgba(239, 68, 68, 0.3)`,
+                        ? `rgba(var(--primary-rgb), ${0.2 + opacity * 0.8})`
+                        : `rgb(244 63 94)`,
                     } : {}}
                     title={`${i}:00: ${e.toFixed(1)}★`}
                   />
-                  {i % 3 === 0 && (
-                    <span className="text-[8px] sm:text-[9px] text-gray-400 font-mono font-bold">{i.toString().padStart(2,'0')}</span>
+                  {(i % 4 === 0) && (
+                    <span className="text-[9px] text-gray-400 font-mono font-black">{i}:00</span>
                   )}
                 </div>
               );
@@ -164,16 +183,16 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Achievements */}
-        <div className="bg-black/[0.02] dark:bg-white/[0.02] rounded-[20px] p-5 sm:p-6 border border-white/30 dark:border-white/5">
-          <h2 className="text-[15px] sm:text-[16px] font-bold mb-4 flex items-center gap-2">
-            <TrendingUp size={16} className="text-gray-400" />
-            成就与里程碑
+        {/* Achievements Section */}
+        <div className="bg-black/[0.02] dark:bg-white/[0.02] rounded-[32px] p-6 sm:p-8 border border-[var(--border-color)]">
+           <h2 className="text-[17px] font-black mb-6 flex items-center gap-2">
+            <TrendingUp size={18} className="text-[var(--primary-color)]" />
+            心流里程碑
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-            <AchievementBadge emoji="🔥" title={`${currentStreak} 天连续正分`} desc="保持每天正向产出" unlocked={currentStreak >= 3} />
-            <AchievementBadge emoji="⭐" title="心流达人" desc="单日累计超过 5★" unlocked={dailyScores.some(d => d.energy >= 5)} />
-            <AchievementBadge emoji="🌿" title="全勤周" desc="7 天连续记录" unlocked={dailyScores.every(d => d.count > 0)} />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+             <Achievement badge="🔥" title="势如破竹" desc={`${currentStreak}天连续记录`} unlocked={currentStreak >= 3} />
+             <Achievement badge="⭐" title="能量爆表" desc="单日星级超过 5.0★" unlocked={dailyScores.some(d => d.energy >= 5)} />
+             <Achievement badge="🏆" title="本周全勤" desc="记录了本周所有日期" unlocked={dailyScores.every(d => d.count > 0)} />
           </div>
         </div>
       </div>
@@ -181,31 +200,39 @@ export default function DashboardPage() {
   );
 }
 
-function SummaryCard({ icon, label, value, accent }: { icon: React.ReactNode; label: string; value: React.ReactNode; accent: string }) {
+function SummaryCard({ icon, label, value, accent, isPrimary }: { icon: React.ReactNode; label: string; value: React.ReactNode; accent?: string; isPrimary?: boolean }) {
   return (
-    <div className="bg-black/[0.02] dark:bg-white/[0.02] rounded-[20px] p-4 sm:p-5 border border-white/30 dark:border-white/5 flex flex-col gap-2.5 sm:gap-3 hover:scale-[1.02] transition-transform">
-      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center text-white shadow-sm" style={{ backgroundColor: accent }}>
+    <div className={`rounded-[32px] p-6 border border-white/20 dark:border-white/5 flex flex-col gap-4 shadow-sm hover:translate-y-[-4px] transition-all active:scale-95 group
+      ${isPrimary 
+        ? 'bg-gradient-to-br from-[var(--primary-color)] to-[var(--primary-color)]/80 text-white shadow-xl shadow-[var(--primary-glow)] border-none' 
+        : 'bg-black/[0.02] dark:bg-white/[0.02]'
+      }
+    `}>
+      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white
+        ${isPrimary ? 'bg-white/20' : ''}
+      `} style={!isPrimary ? { backgroundColor: accent } : {}}>
         {icon}
       </div>
       <div>
-        <p className="text-[11px] sm:text-[12px] text-gray-400 font-bold tracking-wider">{label}</p>
-        <p className="text-xl sm:text-[22px] font-black tracking-tight mt-0.5">{value}</p>
+        <p className={`text-[12px] font-black uppercase tracking-wider ${isPrimary ? 'opacity-80' : 'text-gray-400'}`}>{label}</p>
+        <p className="text-2xl font-black mt-1 tracking-tight">{value}</p>
       </div>
     </div>
   );
 }
 
-function AchievementBadge({ emoji, title, desc, unlocked }: { emoji: string; title: string; desc: string; unlocked: boolean }) {
+function Achievement({ badge, title, desc, unlocked }: { badge: string; title: string; desc: string; unlocked: boolean }) {
   return (
-    <div className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-2xl border transition-all duration-300 ${
-      unlocked 
-        ? 'bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800/50 shadow-sm' 
-        : 'bg-gray-50/50 dark:bg-gray-900/30 border-gray-200 dark:border-gray-700/50 opacity-50 grayscale'
-    }`}>
-      <span className="text-2xl sm:text-3xl">{emoji}</span>
+    <div className={`flex items-center gap-4 p-5 rounded-[24px] border transition-all duration-500
+      ${unlocked 
+        ? 'bg-[var(--primary-light)] border-[var(--primary-color)]/20 shadow-sm' 
+        : 'bg-black/[0.02] dark:bg-white/[0.02] border-transparent opacity-40 grayscale'
+      }
+    `}>
+      <span className="text-3xl">{badge}</span>
       <div>
-        <p className="text-[13px] sm:text-[14px] font-bold">{title}</p>
-        <p className="text-[10px] sm:text-[11px] text-gray-400 font-medium">{desc}</p>
+        <p className={`text-[14px] font-black ${unlocked ? 'text-[var(--foreground)]' : 'text-gray-500'}`}>{title}</p>
+        <p className="text-[11px] font-bold text-gray-400 mt-0.5">{desc}</p>
       </div>
     </div>
   );

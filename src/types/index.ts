@@ -22,11 +22,14 @@ export interface TimeBlock {
   isBonus?: boolean;   // if true, this is a bonus time block
 }
 
+export type PrimaryColor = 'amber' | 'emerald' | 'violet' | 'blue';
+
 export interface UserSettings {
-  timeGranularity: 60;  // Locked to 60 for V5
+  timeGranularity: number; // 60, 30, 25
   decimalPlaces: 0 | 1;
+  hideSleepTime: boolean;
   theme: 'light' | 'dark';
-  hideSleepTime: boolean; // 23:00 - 09:00
+  primaryColor: PrimaryColor;
 }
 
 export interface DayData {

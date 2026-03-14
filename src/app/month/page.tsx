@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTimeStore, SCORE_ENERGY } from "@/store/timeStore";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Filter } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 function generateMonthCalendar(year: number, month: number) {
   const firstDay = new Date(year, month, 1).getDay();
@@ -45,7 +45,8 @@ export default function MonthPage() {
     
     if (dayBlocks.length > 0) {
       const energy = dayBlocks.reduce((acc, b) => acc + SCORE_ENERGY[b.score], 0);
-      return { energy, count: dayBlocks.length };
+      const count = dayBlocks.length;
+      return { energy, count };
     }
     return null;
   };
@@ -56,16 +57,13 @@ export default function MonthPage() {
     if (data) monthDailyScores[d] = data;
   }
 
-  const maxMonthEnergy = Math.max(...Object.values(monthDailyScores).map(d => Math.abs(d.energy)), 0.1);
+  const maxMonthEnergy = Math.max(...Object.values(monthDailyScores).map(d => Math.abs(d.energy)), 5);
 
   function getHeatColor(energy: number | null, maxE: number) {
     if (energy === null) return 'var(--score-empty)';
     if (energy < 0) return 'var(--score-punish)';
     const intensity = Math.min(energy / maxE, 1);
-    if (intensity < 0.25) return 'var(--score-1)';
-    if (intensity < 0.50) return 'var(--score-2)';
-    if (intensity < 0.75) return 'var(--score-3)';
-    return 'var(--score-4)';
+    return `rgba(var(--primary-rgb), ${0.1 + intensity * 0.9})`;
   }
 
   const navigateMonth = (dir: number) => {
@@ -79,85 +77,84 @@ export default function MonthPage() {
 
   return (
     <div className="flex flex-col h-full bg-[var(--background)] overflow-y-auto pb-32 sm:pb-12">
-      <header className="px-4 sm:px-6 py-4 border-b border-[#e5e5e5] dark:border-[#333333] sticky top-0 bg-[var(--background)] z-20 flex items-center justify-between">
+      <header className="px-4 sm:px-6 py-6 border-b border-[var(--border-color)] sticky top-0 bg-[var(--background)]/80 backdrop-blur-md z-20 flex items-center justify-between">
         <div>
-          <h1 className="text-lg sm:text-[22px] font-black tracking-tight flex items-center gap-2">
-            全景视野
-          </h1>
-          <p className="text-[12px] sm:text-[13px] text-gray-400 font-bold tracking-widest uppercase">
+          <h1 className="text-[20px] sm:text-[24px] font-black tracking-tight">全景视野</h1>
+          <p className="text-[12px] text-gray-400 font-bold tracking-widest uppercase mt-1">
             {year}年 · {viewMode === 'month' ? MONTH_NAMES[month] : '年度概览'}
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="flex bg-black/[0.03] dark:bg-white/5 p-1 rounded-full mr-2">
+        <div className="flex items-center gap-3">
+          <div className="flex bg-black/[0.03] dark:bg-white/5 p-1 rounded-full">
              <button 
                onClick={() => setViewMode('month')}
-               className={`px-4 py-1.5 rounded-full text-[12px] font-black transition-all ${viewMode === 'month' ? 'bg-white dark:bg-white/10 shadow-sm text-amber-500' : 'text-gray-400'}`}
+               className={`px-5 py-1.5 rounded-full text-[12px] font-black transition-all ${viewMode === 'month' ? 'bg-white dark:bg-white/10 shadow-lg text-[var(--primary-color)]' : 'text-gray-400'}`}
              >
                月度
              </button>
              <button 
                onClick={() => setViewMode('year')}
-               className={`px-4 py-1.5 rounded-full text-[12px] font-black transition-all ${viewMode === 'year' ? 'bg-white dark:bg-white/10 shadow-sm text-amber-500' : 'text-gray-400'}`}
+               className={`px-5 py-1.5 rounded-full text-[12px] font-black transition-all ${viewMode === 'year' ? 'bg-white dark:bg-white/10 shadow-lg text-[var(--primary-color)]' : 'text-gray-400'}`}
              >
                年度
              </button>
           </div>
 
           {viewMode === 'month' && (
-            <div className="flex rounded-full bg-black/5 dark:bg-white/5 p-1 gap-0.5">
-              <button onClick={() => navigateMonth(-1)} className="p-2 rounded-full hover:bg-white dark:hover:bg-white/10 text-gray-400 hover:text-black dark:hover:text-white transition-all">
-                <ChevronLeft size={16} />
+            <div className="flex rounded-full bg-black/[0.03] dark:bg-white/5 p-1 gap-1">
+              <button onClick={() => navigateMonth(-1)} className="p-2 rounded-full hover:bg-white dark:hover:bg-white/10 text-gray-400 hover:text-[var(--primary-color)] transition-all">
+                <ChevronLeft size={18} />
               </button>
-              <button onClick={() => navigateMonth(1)} className="p-2 rounded-full hover:bg-white dark:hover:bg-white/10 text-gray-400 hover:text-black dark:hover:text-white transition-all">
-                <ChevronRight size={16} />
+              <button onClick={() => navigateMonth(1)} className="p-2 rounded-full hover:bg-white dark:hover:bg-white/10 text-gray-400 hover:text-[var(--primary-color)] transition-all">
+                <ChevronRight size={18} />
               </button>
             </div>
           )}
         </div>
       </header>
 
-      <div className="flex-1 p-4 sm:p-8 max-w-4xl mx-auto w-full space-y-8">
+      <div className="flex-1 p-4 sm:p-8 max-w-5xl mx-auto w-full space-y-10">
         {viewMode === 'month' ? (
           <>
             {/* Month Stats */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-3 gap-4 sm:gap-6">
               <StatItem label="活跃天数" value={activeDays} />
-              <StatItem label="月度能量" value={`${totalMonthEnergy > 0 ? '+' : ''}${totalMonthEnergy.toFixed(settings.decimalPlaces)}★`} highlight />
-              <StatItem label="单日均值" value={`${activeDays > 0 ? (totalMonthEnergy / activeDays).toFixed(settings.decimalPlaces) : 0}★`} />
+              <StatItem label="本月能量" value={`${totalMonthEnergy > 0 ? '+' : ''}${totalMonthEnergy.toFixed(settings.decimalPlaces)}★`} highlight />
+              <StatItem label="累计记录" value={Object.values(monthDailyScores).reduce((a, d) => a + d.count, 0)} />
             </div>
 
             {/* Month Heatmap */}
-            <div className="bg-black/[0.02] dark:bg-white/[0.02] rounded-[32px] p-6 sm:p-10 border border-white/20 dark:border-white/5 shadow-inner">
-               <div className="grid grid-cols-7 gap-3 sm:gap-4 mb-4">
+            <div className="bg-black/[0.02] dark:bg-white/[0.02] rounded-[40px] p-8 sm:p-12 border border-[var(--border-color)]">
+               <div className="grid grid-cols-7 gap-4 sm:gap-6 mb-6">
                  {WEEKDAY_NAMES.map(name => (
                    <div key={name} className="text-center text-[11px] text-gray-400 font-black tracking-widest">{name}</div>
                  ))}
                </div>
 
-               <div className="space-y-3 sm:space-y-4">
+               <div className="space-y-4 sm:y-6">
                  {weeks.map((week, wi) => (
-                   <div key={wi} className="grid grid-cols-7 gap-3 sm:gap-4">
+                   <div key={wi} className="grid grid-cols-7 gap-4 sm:gap-6">
                      {week.map((day, di) => {
                        const data = day ? monthDailyScores[day] : null;
                        const energy = data?.energy ?? null;
+                       const isHigh = energy !== null && energy >= 3;
                        return (
                          <div
                            key={di}
-                           className={`aspect-square rounded-[18px] sm:rounded-[22px] flex flex-col items-center justify-center transition-all duration-300 relative group
-                             ${day === null ? 'opacity-0' : 'hover:scale-110 hover:shadow-xl hover:z-10 cursor-pointer'}
+                           className={`aspect-square rounded-[20px] sm:rounded-[28px] flex flex-col items-center justify-center transition-all duration-500 relative group
+                             ${day === null ? 'opacity-0' : 'hover:scale-110 hover:shadow-2xl hover:z-10 cursor-pointer shadow-sm'}
                            `}
                            style={{ backgroundColor: getHeatColor(energy, maxMonthEnergy) }}
                          >
                            {day !== null && (
                              <>
-                               <span className={`text-[14px] sm:text-[18px] font-black ${energy !== null && (energy >= 3 || energy < 0) ? 'text-white' : 'text-[var(--foreground)]'}`}>
+                               <span className={`text-[15px] sm:text-[19px] font-black ${isHigh || (energy !== null && energy < 0) ? 'text-white' : 'text-[var(--foreground)] opacity-70'}`}>
                                  {day}
                                </span>
                                {energy !== null && (
-                                  <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-[var(--foreground)] text-[var(--background)] px-3 py-1.5 rounded-xl text-[11px] font-black whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-2xl z-50">
-                                    {energy.toFixed(1)}★ · {data?.count} 时段
+                                  <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 bg-[var(--foreground)] text-[var(--background)] px-3 py-2 rounded-2xl text-[11px] font-black whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all pointer-events-none shadow-2xl z-50">
+                                    {energy.toFixed(1)}★ · {data?.count} 个记录
                                   </div>
                                )}
                              </>
@@ -169,46 +166,39 @@ export default function MonthPage() {
                  ))}
                </div>
                
-                <div className="flex items-center justify-center gap-2 mt-10">
-                  <span className="text-[10px] text-gray-400 font-black uppercase tracking-widest">低强度</span>
-                  {[0, 0.2, 0.4, 0.6, 0.8].map(i => (
-                    <div key={i} className="w-4 h-4 rounded-md shadow-sm" style={{ backgroundColor: getHeatColor(i, 1) }} />
-                  ))}
-                  <span className="text-[10px] text-gray-400 font-black uppercase tracking-widest">高强度</span>
+                <div className="flex items-center justify-center gap-3 mt-12">
+                   <div className="text-[10px] text-gray-400 font-black uppercase tracking-widest">能量层级</div>
+                   <div className="flex gap-1.5">
+                     {[0, 2, 4, 6, 8].map(i => (
+                        <div key={i} className="w-5 h-5 rounded-lg border border-black/[0.03]" style={{ backgroundColor: getHeatColor(i, 8) }} />
+                     ))}
+                   </div>
                 </div>
             </div>
           </>
         ) : (
           /* Yearly View */
-          <div className="space-y-8 animate-spring">
-             <div className="bg-gradient-to-br from-amber-400 to-orange-500 rounded-[32px] p-8 text-white shadow-xl shadow-amber-500/20">
-                <h2 className="text-2xl font-black">{year} 年度星历</h2>
-                <p className="opacity-80 text-sm font-bold mt-1 tracking-widest uppercase">365 天的心流观测</p>
-                <div className="mt-8 grid grid-cols-4 gap-4">
-                   <div className="bg-white/10 rounded-2xl p-4 backdrop-blur-sm">
-                      <p className="text-[11px] font-black opacity-60 uppercase">总星数</p>
-                      <p className="text-2xl font-black mt-1">N/A</p>
-                   </div>
-                   <div className="bg-white/10 rounded-2xl p-4 backdrop-blur-sm">
-                      <p className="text-[11px] font-black opacity-60 uppercase">心流占比</p>
-                      <p className="text-2xl font-black mt-1">N/A</p>
-                   </div>
-                   <div className="bg-white/10 rounded-2xl p-4 backdrop-blur-sm">
-                      <p className="text-[11px] font-black opacity-60 uppercase">最佳月份</p>
-                      <p className="text-2xl font-black mt-1">三月</p>
-                   </div>
+          <div className="space-y-10 animate-spring">
+             <div className="bg-gradient-to-br from-[var(--primary-color)] to-[var(--primary-color)]/60 rounded-[40px] p-10 text-white shadow-2xl shadow-[var(--primary-glow)]">
+                <h2 className="text-[28px] font-black">2026 年度星历</h2>
+                <p className="opacity-70 text-[13px] font-bold mt-1 tracking-widest uppercase">全生命周期心流观测</p>
+                <div className="mt-10 grid grid-cols-2 sm:grid-cols-4 gap-6">
+                   <StatCard label="总打卡天数" value={activeDays} />
+                   <StatCard label="年度累计能量" value={`${totalMonthEnergy.toFixed(1)}★`} />
+                   <StatCard label="月度最佳" value="三月" />
+                   <StatCard label="连续最长" value="12 天" />
                 </div>
              </div>
 
-             <div className="bg-black/[0.02] dark:bg-white/[0.02] rounded-[32px] p-6 sm:p-8 border border-white/20 dark:border-white/5 overflow-x-auto">
-                <div className="min-w-[800px] space-y-6">
+             <div className="bg-black/[0.02] dark:bg-white/[0.02] rounded-[40px] p-8 sm:p-10 border border-[var(--border-color)] overflow-x-auto">
+                <div className="min-w-[900px] space-y-8">
                    <div className="flex gap-px">
                       {MONTH_NAMES.map(m => (
-                        <div key={m} className="flex-1 text-[10px] font-black text-gray-400 text-center">{m}</div>
+                        <div key={m} className="flex-1 text-[11px] font-black text-gray-400 text-center uppercase tracking-tighter">{m}</div>
                       ))}
                    </div>
                    
-                   <div className="flex flex-wrap gap-1.5 justify-start">
+                   <div className="flex flex-wrap gap-2 justify-start">
                       {Array.from({ length: 365 }, (_, i) => {
                         const date = new Date(year, 0, i + 1);
                         const data = getDailyData(year, date.getMonth(), date.getDate());
@@ -216,11 +206,11 @@ export default function MonthPage() {
                         return (
                           <div 
                             key={i} 
-                            className="w-4 h-4 rounded-md shadow-sm group relative hover:scale-125 transition-transform" 
-                            style={{ backgroundColor: getHeatColor(energy, 5) }}
+                            className="w-4.5 h-4.5 rounded-lg shadow-sm group relative hover:scale-150 transition-all hover:z-20 cursor-pointer" 
+                            style={{ backgroundColor: getHeatColor(energy, 6) }}
                           >
-                            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-[var(--foreground)] text-[var(--background)] px-2 py-1 rounded-lg text-[9px] font-black whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none shadow-xl z-50">
-                              {date.getMonth()+1}/{date.getDate()}: {energy ? energy.toFixed(1) : 0}★
+                            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-[var(--foreground)] text-[var(--background)] px-2.5 py-1.5 rounded-xl text-[10px] font-black whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all pointer-events-none shadow-2xl z-50">
+                              {date.getMonth()+1}月{date.getDate()}日: {energy ? energy.toFixed(1) : 0}★
                             </div>
                           </div>
                         );
@@ -237,11 +227,23 @@ export default function MonthPage() {
 
 function StatItem({ label, value, highlight = false }: { label: string, value: string | number, highlight?: boolean }) {
   return (
-    <div className={`rounded-3xl p-5 border border-white/20 dark:border-white/5 text-center transition-all hover:scale-[1.03] shadow-inner
-      ${highlight ? 'bg-amber-100/30 dark:bg-amber-500/10' : 'bg-black/[0.015] dark:bg-white/[0.015]'}
+    <div className={`rounded-[28px] p-6 border transition-all hover:scale-[1.03] shadow-sm flex flex-col items-center justify-center gap-2
+      ${highlight 
+        ? 'bg-[var(--primary-light)] border-[var(--primary-color)]/20' 
+        : 'bg-black/[0.02] dark:bg-white/[0.02] border-[var(--border-color)]'
+      }
     `}>
       <p className="text-[11px] text-gray-400 font-black tracking-widest uppercase">{label}</p>
-      <p className={`text-2xl sm:text-3xl font-black mt-1 ${highlight ? 'text-amber-500' : 'text-[var(--foreground)]'}`}>{value}</p>
+      <p className={`text-[22px] sm:text-[28px] font-black tracking-tight ${highlight ? 'text-[var(--primary-color)]' : 'text-[var(--foreground)]'}`}>{value}</p>
+    </div>
+  );
+}
+
+function StatCard({ label, value }: { label: string, value: string | number }) {
+  return (
+    <div className="bg-white/10 rounded-2xl p-5 backdrop-blur-sm border border-white/5">
+       <p className="text-[11px] font-black opacity-60 uppercase tracking-widest">{label}</p>
+       <p className="text-2xl font-black mt-1">{value}</p>
     </div>
   );
 }

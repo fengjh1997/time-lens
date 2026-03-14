@@ -27,6 +27,7 @@ const DEFAULT_SETTINGS: UserSettings = {
   decimalPlaces: 1,
   theme: 'light',
   hideSleepTime: true,
+  primaryColor: 'amber',
 };
 
 interface TimeDataStore {

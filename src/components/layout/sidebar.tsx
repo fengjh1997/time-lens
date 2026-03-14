@@ -9,11 +9,14 @@ import {
   Sun, 
   Settings, 
   Star,
-  Moon,
-  Sparkles
+  Sparkles,
+  User,
+  LogOut,
+  ChevronUp
 } from "lucide-react";
 import { useTimeStore } from "@/store/timeStore";
 import { EnergyDisplay } from "@/components/ui/StarRating";
+import { useState } from "react";
 
 const NAV_ITEMS = [
   { icon: Compass, label: "一周规划", href: "/" },
@@ -25,23 +28,24 @@ const NAV_ITEMS = [
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { totalEnergy, settings, toggleTheme } = useTimeStore();
+  const { totalEnergy } = useTimeStore();
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   return (
-    <div className="w-[260px] h-full bg-[var(--background)] border-r border-[#e5e5e5] dark:border-[#333333] hidden sm:flex flex-col p-6">
+    <div className="w-[260px] h-full bg-[var(--background)] border-r border-[var(--border-color)] hidden sm:flex flex-col p-6 transition-colors duration-300">
       {/* Brand */}
       <div className="flex items-center gap-3 px-2 mb-10">
-        <div className="w-10 h-10 rounded-[14px] bg-amber-500 flex items-center justify-center shadow-lg shadow-amber-500/30">
+        <div className="w-10 h-10 rounded-[14px] bg-[var(--primary-color)] flex items-center justify-center shadow-lg shadow-[var(--primary-glow)]">
           <Star size={22} color="white" fill="white" />
         </div>
         <div>
           <h1 className="font-black text-xl tracking-tight leading-none italic">Time Lens</h1>
-          <span className="text-[10px] font-black tracking-widest text-amber-500 uppercase">Star Energy</span>
+          <span className="text-[10px] font-black tracking-widest text-[var(--primary-color)] uppercase">Star Energy</span>
         </div>
       </div>
 
       {/* Energy Card */}
-      <div className="bg-gradient-to-br from-amber-400 to-orange-500 rounded-[28px] p-5 text-white mb-8 shadow-xl shadow-amber-500/20 group relative overflow-hidden transition-transform hover:scale-[1.02]">
+      <div className="bg-[var(--primary-color)] rounded-[28px] p-5 text-white mb-8 shadow-xl shadow-[var(--primary-glow)] group relative overflow-hidden transition-transform hover:scale-[1.02]">
         <div className="absolute -top-6 -right-6 w-20 h-20 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-colors" />
         <p className="text-[11px] font-black opacity-80 uppercase tracking-widest flex items-center gap-1.5">
           <Sparkles size={12} />
@@ -64,44 +68,50 @@ export default function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3.5 px-4 py-3.5 rounded-2xl transition-all duration-300 group
+              className={`flex items-center gap-3.5 px-4 py-3.5 rounded-2xl transition-all duration-300 group relative
                 ${isActive 
-                  ? "bg-amber-500 text-white shadow-lg shadow-amber-500/20" 
-                  : "text-gray-400 font-bold hover:bg-black/5 dark:hover:bg-white/5 hover:text-black dark:hover:text-white"
+                  ? "bg-[var(--primary-color)] text-white shadow-lg shadow-[var(--primary-glow)]" 
+                  : "text-gray-400 font-bold hover:bg-[var(--hover-bg)] hover:text-[var(--foreground)]"
                 }
               `}
             >
               <item.icon size={20} className={isActive ? "text-white" : "group-hover:scale-110 transition-transform"} />
               <span className="text-[14px] font-black">{item.label}</span>
+              {isActive && (
+                <div className="absolute right-3 w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_white]" />
+              )}
             </Link>
           );
         })}
       </nav>
 
-      {/* Theme Toggle & User */}
-      <div className="pt-6 border-t border-[#e5e5e5] dark:border-[#333333] space-y-4">
+      {/* User Section */}
+      <div className="pt-6 border-t border-[var(--border-color)] relative">
         <button 
-          onClick={toggleTheme}
-          className="w-full flex items-center justify-between px-4 py-3 bg-black/[0.03] dark:bg-white/[0.04] rounded-2xl hover:bg-black/[0.06] dark:hover:bg-white/[0.08] transition-all group"
+          onClick={() => setShowUserMenu(!showUserMenu)}
+          className="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-[var(--hover-bg)] transition-all group"
         >
-          <div className="flex items-center gap-3">
-             {settings.theme === 'light' ? <Sun size={18} className="text-amber-500" /> : <Moon size={18} className="text-blue-400" />}
-             <span className="text-[13px] font-black text-gray-500 group-hover:text-black dark:group-hover:text-white transition-colors">
-               {settings.theme === 'light' ? '白天模式' : '深色模式'}
-             </span>
+          <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center text-gray-500 dark:text-gray-400">
+            <User size={20} />
           </div>
-          <div className={`w-8 h-4 rounded-full p-0.5 transition-colors ${settings.theme === 'light' ? 'bg-amber-200' : 'bg-blue-900'}`}>
-             <div className={`w-3 h-3 rounded-full bg-white transition-transform ${settings.theme === 'light' ? 'translate-x-0' : 'translate-x-4'}`} />
-          </div>
-        </button>
-
-        <div className="flex items-center gap-3 px-2">
-          <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800" />
-          <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-black truncate">Time Lens 用户</p>
+          <div className="flex-1 text-left min-w-0">
+            <p className="text-[13px] font-black truncate">访客用户</p>
             <p className="text-[10px] text-gray-400 font-bold">Standard Edition</p>
           </div>
-        </div>
+          <ChevronUp size={16} className={`text-gray-400 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
+        </button>
+
+        {/* Popover User Menu */}
+        {showUserMenu && (
+          <div className="absolute bottom-full left-0 w-full mb-2 p-2 bg-[var(--modal-bg)] backdrop-blur-xl border border-[var(--border-color)] rounded-[24px] shadow-2xl animate-spring z-50">
+             <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--hover-bg)] transition-all text-[13px] font-black text-gray-600 dark:text-gray-300">
+               <User size={16} /> 个人中心 (待开放)
+             </button>
+             <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/20 text-red-500 transition-all text-[13px] font-black">
+               <LogOut size={16} /> 登出账号
+             </button>
+          </div>
+        )}
       </div>
     </div>
   );
