@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Save, Trash2 } from "lucide-react";
+import { X, Save, Trash2, Calendar } from "lucide-react";
 import { type Score, type TimeBlock } from "@/types";
-import { useTimeStore, DEFAULT_TAGS } from "@/store/timeStore";
+import { useTimeStore } from "@/store/timeStore";
+import StarRating from "@/components/ui/StarRating";
 
 interface RecordModalProps {
   isOpen: boolean;
@@ -15,15 +16,6 @@ interface RecordModalProps {
   hourIdx?: number;
 }
 
-const SCORE_LABELS: Record<Score, string> = {
-  "-1": "荒废与内耗 (-10 pts)",
-  "0": "空闲时段",
-  "1": "轻度维持 (+10 pts)",
-  "2": "常规输出 (+20 pts)",
-  "3": "高效专注 (+30 pts)",
-  "4": "心流状态 (+40 pts)",
-};
-
 export default function RecordModal({
   isOpen,
   onClose,
@@ -33,21 +25,24 @@ export default function RecordModal({
   dayIdx = 0,
   hourIdx = 0,
 }: RecordModalProps) {
+  const { tags } = useTimeStore();
   const [content, setContent] = useState("");
   const [score, setScore] = useState<Score>(0);
   const [selectedTagId, setSelectedTagId] = useState<string | undefined>(undefined);
+  const [isPlanned, setIsPlanned] = useState(false);
 
-  // Sync state when modal opens
   useEffect(() => {
     if (isOpen) {
       if (initialData) {
         setContent(initialData.content);
         setScore(initialData.score);
         setSelectedTagId(initialData.tagId);
+        setIsPlanned(initialData.status === 'planned');
       } else {
         setContent("");
         setScore(0);
         setSelectedTagId(undefined);
+        setIsPlanned(false);
       }
     }
   }, [isOpen, initialData]);
@@ -60,9 +55,10 @@ export default function RecordModal({
       id,
       dayOfWeek: initialData?.dayOfWeek ?? dayIdx,
       hourId: initialData?.hourId ?? hourIdx,
-      score,
+      score: isPlanned ? 0 : score,
       content,
       tagId: selectedTagId,
+      status: isPlanned ? 'planned' : 'completed',
     });
     onClose();
   };
@@ -76,30 +72,53 @@ export default function RecordModal({
         onClick={onClose}
       />
       
-      <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-[var(--modal-bg)] rounded-[24px] shadow-2xl border border-white/20 dark:border-[#333]/50 z-50 flex flex-col pt-4 overflow-hidden">
+      <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-32px)] max-w-md bg-[var(--modal-bg)] rounded-[24px] shadow-2xl border border-white/20 dark:border-[#333]/50 z-50 flex flex-col overflow-hidden backdrop-blur-xl">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 pb-4 border-b border-[#e5e5e5]/50 dark:border-[#333]/50">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e5e5]/50 dark:border-[#333]/50">
           <div>
-            <h3 className="font-bold text-xl tracking-tight">记录时段</h3>
-            <p className="text-[13px] text-gray-500 font-medium tracking-wide mt-1">{timeLabel}</p>
+            <h3 className="font-bold text-lg tracking-tight">{isPlanned ? '安排计划' : '记录时段'}</h3>
+            <p className="text-[13px] text-gray-500 font-medium mt-0.5">{timeLabel}</p>
           </div>
           <button 
             onClick={onClose}
-            className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-colors text-gray-500 hover:text-[var(--foreground)]"
+            className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-colors text-gray-400"
           >
             <X size={20} />
           </button>
         </div>
 
         {/* Body */}
-        <div className="p-6 flex flex-col gap-5 max-h-[60vh] overflow-y-auto">
+        <div className="p-6 flex flex-col gap-5 max-h-[65vh] overflow-y-auto">
+          
+          {/* Mode Toggle: Plan vs Record */}
+          <div className="flex rounded-2xl bg-black/[0.03] dark:bg-white/[0.03] p-1 gap-1">
+            <button
+              type="button"
+              onClick={() => setIsPlanned(false)}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[14px] font-bold transition-all duration-300
+                ${!isPlanned ? 'bg-white dark:bg-white/10 shadow-sm text-[var(--foreground)]' : 'text-gray-400 hover:text-gray-600'}
+              `}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill={!isPlanned ? "#f59e0b" : "none"} stroke={!isPlanned ? "#f59e0b" : "currentColor"} strokeWidth="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+              已完成
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsPlanned(true)}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[14px] font-bold transition-all duration-300
+                ${isPlanned ? 'bg-white dark:bg-white/10 shadow-sm text-[var(--foreground)]' : 'text-gray-400 hover:text-gray-600'}
+              `}
+            >
+              <Calendar size={16} className={isPlanned ? 'text-blue-500' : ''} />
+              计划中
+            </button>
+          </div>
+
           {/* Tag Selector */}
           <div className="flex flex-col gap-2.5">
-            <label className="text-[15px] font-bold text-gray-700 dark:text-gray-300">
-              活动标签
-            </label>
+            <label className="text-[14px] font-bold text-gray-700 dark:text-gray-300">活动标签</label>
             <div className="flex flex-wrap gap-2">
-              {DEFAULT_TAGS.map(tag => (
+              {tags.map(tag => (
                 <button
                   key={tag.id}
                   type="button"
@@ -120,66 +139,36 @@ export default function RecordModal({
           </div>
 
           {/* Content Input */}
-          <div className="flex flex-col gap-2.5">
-            <label className="text-[15px] font-bold text-gray-700 dark:text-gray-300">
-              这个时段你在做什么？
+          <div className="flex flex-col gap-2">
+            <label className="text-[14px] font-bold text-gray-700 dark:text-gray-300">
+              {isPlanned ? '计划做什么？' : '这个时段你在做什么？'}
             </label>
             <textarea
               autoFocus
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="例如：阅读 Next.js 官方文档，并完成首页重构..."
-              className="w-full h-24 p-4 text-[15px] bg-black/[0.03] dark:bg-white/[0.03] border-none rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#33a333]/50 transition-all resize-none shadow-inner font-medium placeholder:font-normal"
+              placeholder={isPlanned ? "例如：深度工作两小时产出设计稿..." : "例如：阅读 Next.js 官方文档..."}
+              className="w-full h-20 p-4 text-[14px] bg-black/[0.03] dark:bg-white/[0.03] border-none rounded-2xl focus:outline-none focus:ring-2 focus:ring-amber-400/50 transition-all resize-none font-medium placeholder:font-normal placeholder:text-gray-400"
             />
           </div>
 
-          {/* Score Selector */}
-          <div className="flex flex-col gap-3.5">
-            <label className="text-[15px] font-bold text-gray-700 dark:text-gray-300 flex items-center justify-between">
-              <span>专注能量值</span>
-              <span className="text-xs font-semibold text-gray-500 transition-colors duration-300 bg-black/5 dark:bg-white/5 px-2.5 py-1 rounded-full">{SCORE_LABELS[score]}</span>
-            </label>
-            
-            <div className="grid grid-cols-6 gap-2 h-14">
-              {[ -1, 0, 1, 2, 3, 4 ].map((s) => {
-                const sTyped = s as Score;
-                const isSelected = score === sTyped;
-                
-                let bgClass = "bg-[var(--score-empty)]";
-                if (s === -1) bgClass = "bg-[var(--score-punish)] text-white";
-                if (s === 1) bgClass = "bg-[var(--score-1)]";
-                if (s === 2) bgClass = "bg-[var(--score-2)] text-white dark:text-[#cce8cc]";
-                if (s === 3) bgClass = "bg-[var(--score-3)] text-white";
-                if (s === 4) bgClass = "bg-[var(--score-4)] text-white";
-
-                return (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => setScore(sTyped)}
-                    className={`
-                      ${bgClass} 
-                      rounded-xl font-mono font-bold text-base transition-all duration-300 ease-out
-                      flex items-center justify-center
-                      ${isSelected ? 'ring-2 ring-offset-2 ring-[#33a333] dark:ring-offset-[#202020] scale-[1.12] shadow-lg z-10' : 'opacity-70 hover:opacity-100 hover:scale-[1.05] border border-black/5 dark:border-white/5'}
-                    `}
-                  >
-                    {s === 0 ? "-" : s}
-                  </button>
-                );
-              })}
+          {/* Star Rating (only for completed) */}
+          {!isPlanned && (
+            <div className="flex flex-col gap-2.5">
+              <label className="text-[14px] font-bold text-gray-700 dark:text-gray-300">专注能量值</label>
+              <StarRating value={score} onChange={setScore} size={28} />
             </div>
-          </div>
+          )}
         </div>
 
-        {/* Footer Actions */}
-        <div className="p-5 bg-black/[0.02] dark:bg-white/[0.02] border-t border-[#e5e5e5]/50 dark:border-[#333]/50 flex items-center justify-between">
+        {/* Footer */}
+        <div className="p-5 bg-black/[0.02] dark:bg-white/[0.02] border-t border-[#e5e5e5]/30 dark:border-[#333]/30 flex items-center justify-between">
           {initialData && initialData.score !== 0 ? (
              <button 
                onClick={() => onDelete?.(initialData.id)}
-               className="flex items-center gap-1.5 px-4 py-2 text-[14px] font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-full transition-colors"
+               className="flex items-center gap-1.5 px-4 py-2 text-[13px] font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-full transition-colors"
              >
-               <Trash2 size={16} />
+               <Trash2 size={15} />
                <span>清空</span>
              </button>
           ) : (
@@ -189,16 +178,18 @@ export default function RecordModal({
           <div className="flex items-center gap-3">
             <button 
               onClick={onClose}
-              className="px-5 py-2.5 text-[15px] font-bold hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-colors"
+              className="px-5 py-2.5 text-[14px] font-bold hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-colors"
             >
               取消
             </button>
             <button 
               onClick={handleSave}
-              className="px-6 py-2.5 flex items-center gap-2 text-[15px] font-bold bg-[#33a333] hover:bg-[#2e922e] text-white rounded-full transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:scale-95"
+              className={`px-6 py-2.5 flex items-center gap-2 text-[14px] font-bold text-white rounded-full transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:scale-95
+                ${isPlanned ? 'bg-blue-500 hover:bg-blue-600' : 'bg-amber-500 hover:bg-amber-600'}
+              `}
             >
-              <Save size={16} />
-              <span>保存记录</span>
+              <Save size={15} />
+              <span>{isPlanned ? '保存计划' : '保存记录'}</span>
             </button>
           </div>
         </div>
