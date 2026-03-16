@@ -1,5 +1,23 @@
 # Time Lens (星辰透镜) - 产品开发日志 (Changelog)
 
+## v6.5.1 (2026-03-16)
+### 📱 PWA 移动端优化 (PWA Conversion)
+- **iOS 适配**：新增 `manifest.json` 与 PWA 图标，支持 iOS 主屏幕添加，实现全屏独立运行体验。
+- **安全边距**：针对移动端底部操作条优化了 `safe-area-inset-bottom` 适配。
+- **离线支持**：集成 `@ducanh2912/next-pwa`，支持 Service Worker 资源缓存，确保离线可用。
+
+### 💾 离线优先存储架构 (Offline-First & Local Sync)
+- **本地优先逻辑**：所有日常操作优先持久化于本地，不再强制依赖网络。
+- **受控云同步**：
+  - 设置页新增 `cloudSyncEnabled` 开关，由用户自主决定是否开启 Supabase 同步。
+  - 新增“立即手动同步”按钮，避免多设备自动冲突，确保数据所有权回归用户。
+
+### 📚 文档体系大修 (Documentation Overhaul)
+- **README 整合**：合并原 PRD 文档至 README，精简项目入口。
+- **版本归档**：在 `参考/回顾.md` 中建立全量历史快照。
+- **开发规范更新**：在 `DEVELOPMENT_STANDARDS.md` 中确立了 PWA 开发与 Git 强制备份规范。
+
+
 ## v6.2.0 (2026-03-14)
 ### ✨ 交互逻辑深度精简 (Interaction Refined)
 - **RecordModal 重构**：
