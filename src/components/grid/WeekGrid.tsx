@@ -8,19 +8,18 @@ import RecordModal from "./RecordModal";
 import Link from "next/link";
 import { PlusCircle } from "lucide-react";
 import { useSync } from "@/hooks/useSync";
+import { useLongPressCharge } from "@/hooks/useLongPressCharge";
+import ChargingOverlay from "@/components/ui/ChargingOverlay";
+import { motion, AnimatePresence } from "framer-motion";
 
 function getScoreColor(score: Score | undefined, status?: string) {
   if (status === 'planned') return 'transparent';
-  if (score === undefined) return "var(--score-empty)";
-  switch (score) {
-    case -1: return "var(--score-punish)";
-    case 0: return "var(--score-empty)";
-    case 0.25: return "var(--score-1)";
-    case 0.5: return "var(--score-2)";
-    case 0.75: return "var(--score-3)";
-    case 1: return "var(--score-4)";
-    default: return "var(--score-empty)";
-  }
+  if (score === undefined || score === 0) return "var(--score-empty)";
+  if (score === -1) return "var(--score-punish)";
+  
+  // Dynamic opacity based on score for the primary color
+  const opacity = score; // 0.25, 0.5, 0.75, 1
+  return `rgba(var(--primary-rgb), ${opacity})`;
 }
 
 const ALL_HOURS = Array.from({ length: 24 }, (_, i) => i);
@@ -33,7 +32,6 @@ interface WeekGridProps {
 
 export default function WeekGrid({ weekDates }: WeekGridProps) {
   const { blocks, saveBlock, deleteBlock, getDayEnergy, settings } = useTimeStore();
-  
   const { pushBlock, deleteCloudBlock } = useSync();
   const [selectedCell, setSelectedCell] = useState<{date: string, hour: number | string} | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -41,6 +39,41 @@ export default function WeekGrid({ weekDates }: WeekGridProps) {
   const handleCellClick = (date: string, hour: number | string) => {
     setSelectedCell({ date, hour });
     setIsModalOpen(true);
+  };
+
+  const handleDragUpdate = (date: string, oldHour: number | string, newHour: number | string) => {
+    if (oldHour === newHour) return;
+    const oldKey = typeof oldHour === 'number' ? `${date}-${oldHour}` : oldHour;
+    const newKey = typeof newHour === 'number' ? `${date}-${newHour}` : newHour;
+    
+    const block = blocks[oldKey];
+    if (!block) return;
+
+    const updatedBlock: TimeBlock = { ...block, hourId: newHour, id: newKey, updatedAt: new Date().toISOString() };
+    deleteBlock(date, block.id);
+    saveBlock(date, updatedBlock);
+    
+    deleteCloudBlock(block.id);
+    pushBlock(updatedBlock, date);
+  };
+
+  const handleChargeSave = (date: string, hourId: number | string, score: Score) => {
+    const key = typeof hourId === 'number' ? `${date}-${hourId}` : hourId;
+    const existing = blocks[key];
+    
+    const newBlock: TimeBlock = existing 
+      ? { ...existing, score, status: 'completed', updatedAt: new Date().toISOString() }
+      : {
+          id: key,
+          hourId: hourId,
+          content: "持续专注",
+          score,
+          status: 'completed',
+          updatedAt: new Date().toISOString()
+        };
+    
+    saveBlock(date, newBlock);
+    pushBlock(newBlock, date);
   };
 
   const handleSaveBlock = (block: TimeBlock) => {
@@ -140,41 +173,19 @@ export default function WeekGrid({ weekDates }: WeekGridProps) {
                   const isCurrentHourCell = dateStr === now.toISOString().split('T')[0] && hourIdx === now.getHours();
 
                   return (
-                    <div 
-                      key={hourIdx} 
-                      onClick={() => handleCellClick(dateStr, hourIdx)}
-                      className={`h-14 sm:h-16 relative group cursor-pointer p-[1px] sm:p-[2px] 
-                        ${isSleep ? 'sleep-hour-bg' : ''}
-                        ${isCurrentHourCell ? 'z-20' : ''}
-                      `}
-                    >
-                      <div 
-                        className={`w-full h-full rounded-[10px] sm:rounded-[14px] transition-all duration-500 relative overflow-hidden shadow-sm
-                          ${isPlanned ? 'border-2 border-dashed border-[var(--primary-color)]/30 bg-[var(--primary-light)]' : ''}
-                          ${isCurrentHourCell ? 'ring-2 ring-inset ring-[var(--primary-color)] shadow-[0_0_10px_var(--primary-glow)]' : ''}
-                        `}
-                        style={isCompleted ? { backgroundColor: getScoreColor(block.score, block.status) } : {}}
-                      >
-                        <div className="absolute inset-0 bg-black/5 dark:bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-                        {block && (
-                          <div className="absolute inset-0 flex flex-col items-center justify-center gap-0.5 px-0.5 pointer-events-none">
-                            {isCompleted && block.score !== 0 && (
-                              <div className="flex items-center gap-1 scale-90 sm:scale-100">
-                                <MiniStarDisplay score={block.score} size={12} color={isPrimaryTheme ? 'white' : undefined} />
-                                {block.pomodoros && block.pomodoros > 0 && (
-                                  <span className={`text-[10px] font-bold ${isPrimaryTheme ? 'text-white' : 'text-amber-500'}`}>🍅x{block.pomodoros}</span>
-                                )}
-                              </div>
-                            )}
-                            <span className={`text-[9px] sm:text-[10px] font-black truncate w-full text-center leading-tight px-1
-                              ${isPlanned ? 'text-[var(--primary-color)]' : isPrimaryTheme ? 'text-white/90' : 'text-[var(--foreground)] opacity-60'}
-                            `}>
-                              {block.content}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                    <WeekGridCell 
+                      key={hourIdx}
+                      dateStr={dateStr}
+                      hourIdx={hourIdx}
+                      block={block}
+                      isSleep={isSleep}
+                      isCurrentHourCell={isCurrentHourCell}
+                      onCellClick={handleCellClick}
+                      onCharge={handleChargeSave}
+                      onDragMove={handleDragUpdate}
+                      settings={settings}
+                      allVisibleHours={visibleHours}
+                    />
                   );
                 })}
 
@@ -207,6 +218,112 @@ export default function WeekGrid({ weekDates }: WeekGridProps) {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function WeekGridCell({
+  dateStr,
+  hourIdx,
+  block,
+  isSleep,
+  isCurrentHourCell,
+  onCellClick,
+  onCharge,
+  onDragMove,
+  settings,
+  allVisibleHours
+}: any) {
+  const { isCharging, chargeProgress, currentChargeScore, startCharging, stopCharging } = useLongPressCharge({
+    onChargeComplete: (score) => onCharge(dateStr, hourIdx, score),
+  });
+
+  const isPlanned = block?.status === 'planned';
+  const isCompleted = block?.status === 'completed';
+  const isPrimaryTheme = isCompleted && block.score !== 0 && block.score !== -1;
+
+  const handleDragEnd = (event: any, info: any) => {
+    if (!block) return;
+    const yOffset = info.offset.y;
+    const rowHeight = 64; // h-16
+    const hourDiff = Math.round(yOffset / rowHeight);
+    
+    if (hourDiff !== 0) {
+      const currentIndex = allVisibleHours.indexOf(hourIdx);
+      const targetIndex = currentIndex + hourDiff;
+      if (targetIndex >= 0 && targetIndex < allVisibleHours.length) {
+        onDragMove(dateStr, hourIdx, allVisibleHours[targetIndex]);
+      }
+    }
+  };
+
+  return (
+    <div 
+      className={`h-14 sm:h-16 relative group p-[1px] sm:p-[2px] 
+        ${isSleep ? 'sleep-hour-bg' : ''}
+        ${isCurrentHourCell ? 'z-20' : ''}
+      `}
+    >
+      <motion.div 
+        layout
+        drag={!!block}
+        dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
+        dragElastic={0.1}
+        onDragEnd={handleDragEnd}
+        onPointerDown={(e: React.PointerEvent) => {
+          if (e.button === 0) startCharging();
+        }}
+        onPointerUp={() => stopCharging()}
+        onPointerLeave={() => stopCharging()}
+        onClick={(e) => {
+          // Prevent click if we were dragging or charging significantly
+          onCellClick(dateStr, hourIdx);
+        }}
+        className={`w-full h-full rounded-[10px] sm:rounded-[14px] transition-all duration-300 relative overflow-hidden shadow-sm flex flex-col items-center justify-center
+          ${isPlanned ? 'border-2 border-dashed border-[var(--primary-color)]/30 bg-[var(--primary-light)]' : ''}
+          ${isCompleted && block.score !== 0 ? 'dark:border-white/5 active:scale-95' : 'bg-black/[0.02] dark:bg-white/[0.02]'}
+          ${isCurrentHourCell ? 'ring-2 ring-inset ring-[var(--primary-color)] shadow-[0_0_10px_var(--primary-glow)]' : ''}
+          ${isCharging ? 'scale-[0.98] brightness-110 shadow-lg' : ''}
+        `}
+        style={isCompleted ? { backgroundColor: getScoreColor(block.score, block.status) } : {}}
+      >
+        <AnimatePresence>
+          {isCharging && (
+            <ChargingOverlay 
+              progress={chargeProgress} 
+              score={currentChargeScore} 
+              isComplete={currentChargeScore === 1} 
+            />
+          )}
+        </AnimatePresence>
+
+        <div className="absolute inset-0 bg-black/5 dark:bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+        
+        {block && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-0.5 px-0.5 pointer-events-none select-none">
+            {isCompleted && block.score !== 0 && (
+              <div className="flex items-center gap-0.5 scale-[0.8] sm:scale-[0.9]">
+                <MiniStarDisplay score={block.score} size={10} color={isPrimaryTheme ? 'white' : undefined} />
+                {block.pomodoros && block.pomodoros > 0 && settings.showDetailsInWeekView && (
+                  <span className={`text-[8px] font-bold ${isPrimaryTheme ? 'text-white' : 'text-amber-500'}`}>🍅x{block.pomodoros}</span>
+                )}
+              </div>
+            )}
+            
+            {(settings.showDetailsInWeekView || isPlanned) && (
+              <span className={`text-[8px] sm:text-[9px] font-black truncate w-full text-center leading-tight px-1
+                ${isPlanned ? 'text-[var(--primary-color)]' : isPrimaryTheme ? 'text-white/90' : 'text-[var(--foreground)] opacity-60'}
+              `}>
+                {block.content}
+              </span>
+            )}
+            
+            {!settings.showDetailsInWeekView && block.score === 0 && !isPlanned && (
+              <div className="w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-gray-700 opacity-20" />
+            )}
+          </div>
+        )}
+      </motion.div>
     </div>
   );
 }

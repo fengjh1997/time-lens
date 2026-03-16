@@ -27,8 +27,9 @@ const DEFAULT_SETTINGS: UserSettings = {
   decimalPlaces: 1,
   theme: 'light',
   hideSleepTime: true,
-  primaryColor: 'amber',
-  cloudSyncEnabled: false, // 默认关闭云端同步，用户主动开启
+  primaryColor: 'emerald',
+  cloudSyncEnabled: false, 
+  showDetailsInWeekView: true,
 };
 
 interface TimeDataStore {

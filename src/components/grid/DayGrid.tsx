@@ -5,8 +5,11 @@ import { type Score, type TimeBlock } from "@/types";
 import { useTimeStore, SCORE_ENERGY } from "@/store/timeStore";
 import { MiniStarDisplay, EnergyDisplay } from "@/components/ui/StarRating";
 import RecordModal from "./RecordModal";
-import { CheckCircle, Clock, Sparkles, Plus } from "lucide-react";
 import { useSync } from "@/hooks/useSync";
+import { useLongPressCharge } from "@/hooks/useLongPressCharge";
+import ChargingOverlay from "@/components/ui/ChargingOverlay";
+import { motion, AnimatePresence } from "framer-motion";
+import { Sparkles, Plus, CheckCircle, Clock } from "lucide-react";
 
 function getScoreColor(score?: Score) {
   if (score === undefined) return "var(--score-empty)";
@@ -29,10 +32,52 @@ interface DayGridProps {
 }
 
 export default function DayGrid({ dateStr = "2026-03-16" }: DayGridProps) {
-  const { blocks, saveBlock, deleteBlock, getBlocksForDate, getDayEnergy, tags, settings } = useTimeStore();
+  const { blocks, saveBlock, deleteBlock, getBlocksForDate, getDayEnergy, tags, settings, updateSettings } = useTimeStore();
   const { pushBlock, deleteCloudBlock } = useSync();
   const [selectedHour, setSelectedHour] = useState<number | string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleDragUpdate = (oldHour: number | string, newHour: number | string) => {
+    if (oldHour === newHour) return;
+    const oldKey = typeof oldHour === 'number' ? `${dateStr}-${oldHour}` : oldHour;
+    const newKey = typeof newHour === 'number' ? `${dateStr}-${newHour}` : newHour;
+    
+    const block = blocks[oldKey];
+    if (!block) return;
+
+    // Move block to new hour
+    const updatedBlock: TimeBlock = { 
+      ...block, 
+      hourId: newHour, 
+      id: newKey,
+      updatedAt: new Date().toISOString()
+    };
+    deleteBlock(dateStr, block.id);
+    saveBlock(dateStr, updatedBlock);
+    
+    // Sync
+    deleteCloudBlock(block.id);
+    pushBlock(updatedBlock, dateStr);
+  };
+
+  const handleChargeSave = (hourId: number | string, score: Score) => {
+    const key = typeof hourId === 'number' ? `${dateStr}-${hourId}` : hourId;
+    const existing = blocks[key];
+    
+    const newBlock: TimeBlock = existing 
+      ? { ...existing, score, status: 'completed', updatedAt: new Date().toISOString() }
+      : {
+          id: key,
+          hourId: hourId,
+          content: "能量汇聚",
+          score,
+          status: 'completed',
+          updatedAt: new Date().toISOString()
+        };
+    
+    saveBlock(dateStr, newBlock);
+    pushBlock(newBlock, dateStr);
+  };
 
   const dayBlocks = getBlocksForDate(dateStr);
   const dayEnergy = getDayEnergy(dateStr);
@@ -155,82 +200,20 @@ export default function DayGrid({ dateStr = "2026-03-16" }: DayGridProps) {
             const isCurrentHour = isToday && hourIdx === now.getHours();
             
             return (
-              <div 
+              <GridCell 
                 key={hourIdx}
-                onClick={() => handleCellClick(hourIdx)}
-                className={`group flex gap-4 sm:gap-6 cursor-pointer items-stretch ${isSleep ? 'opacity-60' : ''}`}
-              >
-                <div className={`w-14 shrink-0 flex justify-end items-start text-[14px] font-black font-mono text-gray-200 dark:text-gray-800 group-hover:text-gray-400 dark:group-hover:text-gray-600 transition-colors pt-4 
-                  ${isSleep ? 'text-gray-100 dark:text-gray-900' : ''}
-                  ${isCurrentHour ? 'text-[var(--primary-color)] scale-110' : ''}
-                `}>
-                  {hourIdx.toString().padStart(2, '0')}:00
-                </div>
-
-                <div 
-                  className={`flex-1 min-h-[4.5rem] rounded-[24px] p-4 sm:p-5 transition-all duration-300 ease-out flex items-center
-                    ${isPlanned 
-                      ? 'border-2 border-dashed border-[var(--primary-color)] opacity-60 bg-[var(--primary-light)] hover:scale-[1.01]' 
-                      : isCompleted && block.score !== 0
-                        ? 'shadow-sm hover:shadow-md hover:scale-[1.01] border border-white/20 dark:border-white/5'
-                        : isSleep 
-                          ? 'sleep-hour-bg border border-transparent'
-                          : 'bg-black/[0.015] dark:bg-white/[0.015] hover:bg-black/[0.03] dark:hover:bg-white/[0.03] hover:scale-[1.005]'
-                    }
-                    ${isSelected ? 'ring-2 ring-offset-2 ring-[var(--primary-color)] dark:ring-offset-[#111] scale-[1.02] shadow-xl' : ''}
-                    ${isCurrentHour ? 'border-2 border-[var(--primary-color)] shadow-[0_0_15px_var(--primary-glow)] animate-spring' : ''}
-                  `}
-                  style={isCompleted && block.score !== 0 ? { 
-                    backgroundColor: getScoreColor(block.score),
-                    color: block.score === -1 || block.score >= 0.75 ? 'white' : 'var(--foreground)'
-                  } : {}}
-                >
-                  <div className="flex items-center justify-between w-full gap-3">
-                    <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
-                      {tag && (
-                        <div className="w-10 h-10 rounded-2xl bg-black/10 flex items-center justify-center shrink-0">
-                          <span className="text-xl">{tag.emoji}</span>
-                        </div>
-                      )}
-                      
-                      <div className="flex-1 min-w-0">
-                        {hasContent ? (
-                          <div className="flex flex-col gap-0.5">
-                            <span className={`text-[15px] font-black leading-tight block truncate
-                              ${isPlanned ? 'text-[var(--primary-color)]' : ''}
-                            `}>
-                              {block.content}
-                            </span>
-                            {tag && <span className="text-[11px] font-bold opacity-60 tracking-wider uppercase">{tag.name}</span>}
-                          </div>
-                        ) : (
-                          <span className={`text-[14px] font-bold text-gray-200 dark:text-gray-800 group-hover:text-gray-300 dark:group-hover:text-gray-700 transition-colors tracking-widest uppercase ${isSleep ? 'text-gray-100 dark:text-gray-900' : ''}`}>
-                            空闲真空时段
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {isCompleted && block.score !== 0 && (
-                      <div className="shrink-0 flex items-center gap-2 bg-black/10 dark:bg-white/10 px-3 py-1.5 rounded-full backdrop-blur-md">
-                        {block.pomodoros && block.pomodoros > 0 && (
-                           <div className="flex gap-0.5 border-r border-black/10 dark:border-white/10 pr-2 mr-0.5">
-                             {Array(block.pomodoros).fill(0).map((_, i) => <span key={i}>🍅</span>)}
-                           </div>
-                        )}
-                        <MiniStarDisplay score={block.score} size={16} />
-                        <span className="text-[13px] font-black tabular-nums">{block.score}</span>
-                      </div>
-                    )}
-                    
-                    {isPlanned && (
-                      <span className="shrink-0 text-[11px] font-black text-[var(--primary-color)] bg-[var(--primary-light)] px-3 py-1 rounded-full uppercase tracking-widest">
-                        待执行
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
+                dateStr={dateStr}
+                hourIdx={hourIdx}
+                block={block}
+                isSleep={isSleep}
+                isCurrentHour={isCurrentHour}
+                isSelected={isSelected}
+                onClick={handleCellClick}
+                onCharge={handleChargeSave}
+                onDragMove={handleDragUpdate}
+                tag={tag}
+                allVisibleHours={visibleHours}
+              />
             );
           })}
 
@@ -281,6 +264,143 @@ export default function DayGrid({ dateStr = "2026-03-16" }: DayGridProps) {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// Sub-component for each grid cell to handle charging and dragging
+function GridCell({ 
+  hourIdx, 
+  block, 
+  isSleep, 
+  isCurrentHour, 
+  isSelected, 
+  onClick, 
+  onCharge,
+  onDragMove,
+  tag,
+  allVisibleHours
+}: any) {
+  const { isCharging, chargeProgress, currentChargeScore, startCharging, stopCharging } = useLongPressCharge({
+    onChargeComplete: (score) => onCharge(hourIdx, score),
+  });
+
+  const isPlanned = block?.status === 'planned';
+  const isCompleted = block?.status === 'completed';
+  const hasContent = block && (block.score !== 0 || block.status === 'planned');
+
+  // Drag logic
+  const handleDragEnd = (event: any, info: any) => {
+    if (!block) return;
+    const yOffset = info.offset.y;
+    const rowHeight = 72; // ~4.5rem
+    const hourDiff = Math.round(yOffset / rowHeight);
+    
+    if (hourDiff !== 0) {
+      const currentIndex = allVisibleHours.indexOf(hourIdx);
+      const targetIndex = currentIndex + hourDiff;
+      if (targetIndex >= 0 && targetIndex < allVisibleHours.length) {
+        onDragMove(block.id, hourIdx, allVisibleHours[targetIndex]);
+      }
+    }
+  };
+
+  return (
+    <div className={`group flex gap-4 sm:gap-6 items-stretch ${isSleep ? 'opacity-40' : ''}`}>
+      <div className={`w-14 shrink-0 flex justify-end items-start text-[14px] font-black font-mono text-gray-200 dark:text-gray-800 group-hover:text-gray-400 dark:group-hover:text-gray-600 transition-colors pt-4 
+        ${isSleep ? 'text-gray-100 dark:text-gray-900' : ''}
+        ${isCurrentHour ? 'text-[var(--primary-color)] scale-110' : ''}
+      `}>
+        {hourIdx.toString().padStart(2, '0')}:00
+      </div>
+
+      <motion.div 
+        layout
+        drag={!!block}
+        dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
+        dragElastic={0.1}
+        onDragEnd={handleDragEnd}
+        onPointerDown={(e: React.PointerEvent) => {
+          // Only start charging if clicking on empty or existing block
+          // But allow drag to take over if movement happens
+          startCharging();
+        }}
+        onPointerUp={() => stopCharging()}
+        onPointerLeave={() => stopCharging()}
+        onClick={() => onClick(hourIdx)}
+        className={`flex-1 min-h-[4.5rem] rounded-[24px] p-4 sm:p-5 transition-all duration-300 ease-out flex items-center relative
+          ${isPlanned 
+            ? 'border-2 border-dashed border-[var(--primary-color)] opacity-60 bg-[var(--primary-light)]' 
+            : isCompleted && block.score !== 0
+              ? 'shadow-sm border border-white/20 dark:border-white/5 active:scale-95'
+              : isSleep 
+                ? 'sleep-hour-bg border border-transparent opacity-30 group-hover:opacity-100'
+                : 'bg-black/[0.015] dark:bg-white/[0.015] hover:bg-black/[0.03] dark:hover:bg-white/[0.03] active:scale-[0.98]'
+          }
+          ${isSelected ? 'ring-2 ring-offset-2 ring-[var(--primary-color)] dark:ring-offset-[#111] scale-[1.02] shadow-xl' : ''}
+          ${isCurrentHour ? 'border-2 border-[var(--primary-color)] shadow-[0_0_15px_var(--primary-glow)]' : ''}
+          ${isCharging ? 'scale-[0.98] brightness-110' : ''}
+        `}
+        style={isCompleted && block.score !== 0 ? { 
+          backgroundColor: getScoreColor(block.score),
+          color: block.score === -1 || block.score >= 0.75 ? 'white' : 'var(--foreground)'
+        } : {}}
+      >
+        <AnimatePresence>
+          {isCharging && (
+            <ChargingOverlay 
+              progress={chargeProgress} 
+              score={currentChargeScore} 
+              isComplete={currentChargeScore === 1} 
+            />
+          )}
+        </AnimatePresence>
+
+        <div className="flex items-center justify-between w-full gap-3 pointer-events-none select-none">
+          <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+            {tag && (
+              <div className="w-10 h-10 rounded-2xl bg-black/10 flex items-center justify-center shrink-0">
+                <span className="text-xl">{tag.emoji}</span>
+              </div>
+            )}
+            
+            <div className="flex-1 min-w-0">
+              {hasContent ? (
+                <div className="flex flex-col gap-0.5">
+                  <span className={`text-[15px] font-black leading-tight block truncate
+                    ${isPlanned ? 'text-[var(--primary-color)]' : ''}
+                  `}>
+                    {block.content}
+                  </span>
+                  {tag && <span className="text-[11px] font-bold opacity-60 tracking-wider uppercase">{tag.name}</span>}
+                </div>
+              ) : (
+                <span className={`text-[14px] font-bold text-gray-200 dark:text-gray-800 group-hover:text-gray-300 dark:group-hover:text-gray-700 transition-colors tracking-widest uppercase ${isSleep ? 'text-gray-100 dark:text-gray-900' : ''}`}>
+                  {isCharging ? '能量汇聚中...' : '空闲真空时段'}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {isCompleted && block.score !== 0 && (
+            <div className="shrink-0 flex items-center gap-2 bg-black/10 dark:bg-white/10 px-3 py-1.5 rounded-full backdrop-blur-md">
+              {block.pomodoros && block.pomodoros > 0 && (
+                 <div className="flex gap-0.5 border-r border-black/10 dark:border-white/10 pr-2 mr-0.5">
+                   {Array(block.pomodoros).fill(0).map((_, i) => <span key={i}>🍅</span>)}
+                 </div>
+              )}
+              <MiniStarDisplay score={block.score} size={16} />
+              <span className="text-[13px] font-black tabular-nums">{block.score}</span>
+            </div>
+          )}
+          
+          {isPlanned && (
+            <span className="shrink-0 text-[11px] font-black text-[var(--primary-color)] bg-[var(--primary-light)] px-3 py-1 rounded-full uppercase tracking-widest">
+              待执行
+            </span>
+          )}
+        </div>
+      </motion.div>
     </div>
   );
 }

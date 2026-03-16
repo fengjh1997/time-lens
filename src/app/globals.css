@@ -8,8 +8,8 @@
 }
 
 :root {
-  /* Dynamic Primary Color Palette */
-  --primary-rgb: 245 158 11; /* Default: Amber */
+  /* Dynamic Primary Color Palette (Default: Emerald) */
+  --primary-rgb: 16 185 129; 
   --primary-color: rgb(var(--primary-rgb));
   --primary-light: rgba(var(--primary-rgb), 0.1);
   --primary-glow: rgba(var(--primary-rgb), 0.3);

@@ -26,8 +26,8 @@ import {
 import Link from "next/link";
 
 const PRIMARY_COLORS: { id: PrimaryColor, color: string, name: string }[] = [
-  { id: 'amber', color: '#f59e0b', name: '琥珀金' },
   { id: 'emerald', color: '#10b981', name: '翡翠绿' },
+  { id: 'amber', color: '#f59e0b', name: '琥珀金' },
   { id: 'violet', color: '#8b5cf6', name: '紫罗兰' },
   { id: 'blue', color: '#3b82f6', name: '深邃蓝' },
 ];
@@ -154,7 +154,7 @@ export default function SettingsPage() {
           {user ? (
             <div className={`rounded-[32px] p-7 text-white shadow-xl transition-all duration-500 relative overflow-hidden group
               ${settings.cloudSyncEnabled 
-                ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-emerald-500/20' 
+                ? 'bg-gradient-to-br from-[var(--primary-color)] to-[var(--primary-color)] shadow-[0_10px_30px_rgba(var(--primary-rgb),0.3)]' 
                 : 'bg-gradient-to-br from-gray-500 to-gray-600 shadow-gray-500/20'
               }
             `}>
@@ -319,6 +319,22 @@ export default function SettingsPage() {
                 >
                   <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${settings.hideSleepTime ? 'left-7' : 'left-1'}`} />
                 </button>
+             </div>
+
+             <div className="flex items-center justify-between pt-6 border-t border-[var(--border-color)]">
+              <div>
+                <p className="text-[15px] font-black">周视图展示详情</p>
+                <p className="text-[12px] text-gray-400 font-bold">在周视图格子中直接展示 Emoji 和感悟文本</p>
+              </div>
+              <button 
+                onClick={() => {
+                  updateSettings({ showDetailsInWeekView: !settings.showDetailsInWeekView });
+                  setTimeout(pushSettings, 100);
+                }}
+                className={`w-12 h-6 rounded-full relative transition-colors ${settings.showDetailsInWeekView ? 'bg-[var(--primary-color)]' : 'bg-gray-300 dark:bg-gray-700'}`}
+              >
+                <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${settings.showDetailsInWeekView ? 'left-7' : 'left-1'}`} />
+              </button>
              </div>
 
              <div className="flex items-center justify-between pt-6 border-t border-[var(--border-color)]">

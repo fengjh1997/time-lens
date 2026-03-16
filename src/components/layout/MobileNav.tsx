@@ -27,7 +27,7 @@ export default function MobileNav() {
               href={item.href}
               className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-2xl transition-all duration-200 min-w-[48px]
                 ${isActive 
-                  ? 'text-amber-500 dark:text-amber-400' 
+                  ? 'text-[var(--primary-color)]' 
                   : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
                 }
               `}

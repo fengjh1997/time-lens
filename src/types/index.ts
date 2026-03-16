@@ -12,14 +12,15 @@ export interface Tag {
 
 export interface TimeBlock {
   id: string;
-  dayOfWeek: number; // 0-6
-  hourId: number;    // 0-23 or special ID for Bonus
+  dayOfWeek?: number;
+  hourId: number | string;
   score: Score;
   content: string;
-  tagId?: string;    // optional tag reference
-  status: BlockStatus; // 'planned' = future plan, 'completed' = scored+done
-  pomodoros?: number;  // number of 25min pomodoros in this hour (0, 1, 2)
-  isBonus?: boolean;   // if true, this is a bonus time block
+  tagId?: string;
+  status: BlockStatus;
+  updatedAt?: string;
+  pomodoros?: number;
+  isBonus?: boolean;
 }
 
 export type PrimaryColor = 'amber' | 'emerald' | 'violet' | 'blue';
@@ -32,6 +33,7 @@ export interface UserSettings {
   primaryColor: PrimaryColor;
   showTagNamesInWeekView?: boolean;
   cloudSyncEnabled?: boolean;
+  showDetailsInWeekView?: boolean;
 }
 
 export interface DayData {
