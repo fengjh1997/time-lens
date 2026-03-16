@@ -144,6 +144,21 @@ export default function DayGrid({ dateStr = "2026-03-16" }: DayGridProps) {
                 <div className="text-3xl sm:text-4xl font-black text-[var(--primary-color)] mt-0.5 tabular-nums">
                   <EnergyDisplay value={dayEnergy} />
                 </div>
+                
+                {/* Energy Goal Progress Bar */}
+                <div className="mt-3 w-48 transition-all duration-700">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[10px] font-black opacity-40 uppercase tracking-widest">目标进度 {Math.min(Math.round((dayEnergy / settings.dailyEnergyGoal) * 100), 100)}%</span>
+                    <span className="text-[10px] font-black opacity-40 uppercase tracking-widest">{settings.dailyEnergyGoal}★</span>
+                  </div>
+                  <div className="h-1.5 w-full bg-black/5 dark:bg-white/10 rounded-full overflow-hidden">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${Math.min((dayEnergy / settings.dailyEnergyGoal) * 100, 100)}%` }}
+                      className="h-full bg-[var(--primary-color)] shadow-[0_0_8px_var(--primary-glow)]"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
             
@@ -319,11 +334,10 @@ function GridCell({
         drag={!!block}
         dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
         dragElastic={0.1}
+        dragTransition={{ bounceStiffness: 600, bounceDamping: 20 }}
         onDragEnd={handleDragEnd}
         onPointerDown={(e: React.PointerEvent) => {
-          // Only start charging if clicking on empty or existing block
-          // But allow drag to take over if movement happens
-          startCharging();
+          if (e.button === 0) startCharging();
         }}
         onPointerUp={() => stopCharging()}
         onPointerLeave={() => stopCharging()}
@@ -389,8 +403,9 @@ function GridCell({
                    {Array(block.pomodoros).fill(0).map((_, i) => <span key={i}>🍅</span>)}
                  </div>
               )}
-              <MiniStarDisplay score={block.score} size={16} />
-              <span className="text-[13px] font-black tabular-nums">{block.score}</span>
+              <div className="flex items-center">
+                <MiniStarDisplay score={block.score} size={16} />
+              </div>
             </div>
           )}
           

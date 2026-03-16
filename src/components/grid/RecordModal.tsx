@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { X, Save, Trash2, Calendar, Sparkles, Play, Pause, RotateCcw, Timer } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { type Score, type TimeBlock } from "@/types";
 import { useTimeStore } from "@/store/timeStore";
 import StarRating from "@/components/ui/StarRating";
@@ -140,138 +141,159 @@ export default function RecordModal({
         {/* Body */}
         <div className="p-8 flex flex-col gap-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
           
-          {/* Status Toggle (Integrated Design) */}
-          {!isBonusType && (
-            <div className="flex rounded-[26px] bg-black/[0.04] dark:bg-white/[0.04] p-1.5 gap-1.5">
-              <button
-                type="button"
-                onClick={() => setIsPlanned(false)}
-                className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-[20px] text-[15px] font-black transition-all duration-500
-                  ${!isPlanned ? 'bg-white dark:bg-white/10 shadow-xl text-[var(--primary-color)]' : 'text-gray-400 hover:text-gray-500'}
-                `}
-              >
-                已完成
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsPlanned(true)}
-                className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-[20px] text-[15px] font-black transition-all duration-500
-                  ${isPlanned ? 'bg-white dark:bg-white/10 shadow-xl text-[var(--primary-color)]' : 'text-gray-400 hover:text-gray-500'}
-                `}
-              >
-                计划中
-              </button>
-            </div>
-          )}
-
-          {/* 1. interactive Pomodoro Timer (Only if Current Time Block) */}
-          {!isPlanned && isCurrentTimeBlock && (
-            <div className="bg-[var(--primary-light)] rounded-[40px] p-7 border border-[var(--primary-color)]/10 space-y-6 relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
-                <Timer size={80} className="text-[var(--primary-color)]" />
-              </div>
-
-              <div className="flex items-center justify-between relative z-10">
-                <div className="flex items-center gap-2 text-[var(--primary-color)]">
-                  <Timer size={20} className="animate-pulse" />
-                  <span className="text-[12px] font-black uppercase tracking-widest">专注番茄钟</span>
-                </div>
-                <div className="flex gap-2">
-                  <button onClick={() => setTimeLeft(25 * 60)} className="text-[11px] bg-[var(--primary-color)]/10 px-3.5 py-1.5 rounded-full text-[var(--primary-color)] font-black hover:scale-105 transition-all">25m</button>
-                  <button onClick={() => setTimeLeft(10 * 60)} className="text-[11px] bg-[var(--primary-color)]/10 px-3.5 py-1.5 rounded-full text-[var(--primary-color)] font-black hover:scale-105 transition-all">10m</button>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-8 relative z-10">
-                <div className="text-5xl font-black font-mono text-[var(--primary-color)] tabular-nums tracking-tighter">
-                  {formatTime(timeLeft)}
-                </div>
-                <button 
-                  onClick={() => setIsTimerRunning(!isTimerRunning)}
-                  className={`flex-1 py-4.5 rounded-[24px] font-black text-[15px] transition-all flex items-center justify-center gap-2 shadow-lg
-                    ${isTimerRunning 
-                      ? 'bg-amber-100 text-amber-600 ring-2 ring-amber-200' 
-                      : 'bg-[var(--primary-color)] text-white hover:brightness-110 active:scale-95'}
-                  `}
-                >
-                  {isTimerRunning ? <><Pause size={20} fill="currentColor" /> 暂停</> : <><Play size={20} fill="currentColor" /> 开始专注</>}
-                </button>
-                <button 
-                  onClick={() => { setIsTimerRunning(false); setTimeLeft(25 * 60); }}
-                  className="p-4 bg-[var(--primary-color)]/10 text-[var(--primary-color)] rounded-[22px] hover:bg-[var(--primary-color)]/20 transition-all active:scale-90"
-                >
-                  <RotateCcw size={22} />
-                </button>
-              </div>
-
-              <div className="flex items-center gap-4 pt-2 relative z-10">
-                 <p className="text-[12px] font-bold text-gray-500 dark:text-gray-400">本时段产出：</p>
-                 <div className="flex gap-2.5">
-                    {[1, 2].map(num => (
-                      <button
-                        key={num}
-                        onClick={() => setPomodoros(num === pomodoros ? 0 : num)}
-                        className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all shadow-sm
-                          ${pomodoros >= num ? 'bg-[var(--primary-color)]/20 scale-110' : 'bg-black/[0.04] dark:bg-white/5 opacity-40 grayscale'}
-                        `}
-                      >
-                        🍅
-                      </button>
-                    ))}
-                 </div>
-              </div>
-            </div>
-          )}
-
-          {/* 2. Energy Collection (Rating) */}
-          {!isPlanned && (
-            <div className="flex flex-col gap-5">
-              <div className="flex items-center justify-between">
-                <label className="text-[15px] font-black text-[var(--foreground)] opacity-90">能量收集</label>
-                <div className="text-[10px] font-black px-3 py-1 bg-[var(--primary-color)]/10 text-[var(--primary-color)] rounded-full uppercase tracking-widest border border-[var(--primary-color)]/10">Energy Matrix</div>
-              </div>
-              <div className="bg-black/[0.02] dark:bg-white/[0.03] p-8 rounded-[40px] border border-[var(--border-color)] flex justify-center shadow-inner">
-                <StarRating value={score} onChange={setScore} size={36} />
-              </div>
-            </div>
-          )}
-
-          {/* 3. Tag Selector (领域规置) */}
+          {/* Step 1: Tag Selector (Always visible or primary if new) */}
           <div className="flex flex-col gap-5">
-            <label className="text-[15px] font-black text-[var(--foreground)] opacity-90">领域规置</label>
-            <div className="grid grid-cols-4 gap-4">
-              {tags.map(tag => (
-                <button
-                  key={tag.id}
-                  type="button"
-                  onClick={() => setSelectedTagId(selectedTagId === tag.id ? undefined : tag.id)}
-                  className={`flex flex-col items-center gap-2.5 py-4 rounded-[24px] text-[13px] font-black transition-all duration-500
-                    ${selectedTagId === tag.id 
-                      ? 'text-white shadow-xl scale-[1.08] z-10' 
-                      : 'bg-black/[0.03] dark:bg-white/[0.06] text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'
-                    }
-                  `}
-                  style={selectedTagId === tag.id ? { backgroundColor: tag.color } : {}}
+            <div className="flex items-center justify-between">
+              <label className="text-[15px] font-black text-[var(--foreground)] opacity-90">
+                {!selectedTagId ? "第 1 步：选择所属领域" : "所属领域"}
+              </label>
+              {selectedTagId && (
+                <button 
+                  onClick={() => setSelectedTagId(undefined)}
+                  className="text-[11px] font-black text-[var(--primary-color)] underline"
                 >
-                  <span className="text-3xl drop-shadow-sm">{tag.emoji}</span>
-                  <span className="truncate w-full text-center px-1 opacity-90">{tag.name}</span>
+                  重新选择
                 </button>
-              ))}
+              )}
+            </div>
+            <div className={`grid transition-all duration-500 gap-4 ${!selectedTagId ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-4'}`}>
+              {tags.map(tag => {
+                const isSelected = selectedTagId === tag.id;
+                if (selectedTagId && !isSelected) return null; // Only show selected one if chosen
+                
+                return (
+                  <button
+                    key={tag.id}
+                    type="button"
+                    onClick={() => setSelectedTagId(tag.id)}
+                    className={`flex flex-col items-center gap-2.5 py-4 rounded-[24px] text-[13px] font-black transition-all duration-500
+                      ${isSelected 
+                        ? 'text-white shadow-xl scale-[1.05] z-10' 
+                        : 'bg-black/[0.03] dark:bg-white/[0.06] text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'
+                      }
+                    `}
+                    style={isSelected ? { backgroundColor: tag.color } : {}}
+                  >
+                    <span className="text-3xl drop-shadow-sm">{tag.emoji}</span>
+                    <span className="truncate w-full text-center px-1 opacity-90">{tag.name}</span>
+                  </button>
+                );
+              })}
+              
+              {/* Show all if none selected */}
+              {!selectedTagId && tags.length === 0 && (
+                 <div className="col-span-full py-8 text-center text-gray-300 font-bold uppercase tracking-widest text-[11px]">
+                   请先在设置中创建标签
+                 </div>
+              )}
             </div>
           </div>
 
-          {/* 4. Content Input (心流记录与感悟) */}
-          <div className="flex flex-col gap-4">
-            <label className="text-[15px] font-black text-[var(--foreground)] opacity-90 tracking-tight">
-              {isPlanned ? '本时段核心行动目标' : '心流记录与感悟'}
-            </label>
-            <textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder={isPlanned ? "例如：完成项目 UI 走查，解决对比度问题..." : "此刻的感觉如何？产出了多少价值？"}
-              className="w-full h-28 p-6 text-[16px] bg-black/[0.03] dark:bg-white/[0.05] border-2 border-transparent focus:border-[var(--primary-color)]/20 rounded-[32px] focus:outline-none focus:ring-4 focus:ring-[var(--primary-glow)] transition-all resize-none font-bold placeholder:text-gray-300 dark:placeholder:text-gray-600 leading-relaxed"
-            />
-          </div>
+          {selectedTagId && (
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex flex-col gap-8"
+            >
+              {/* Status Toggle */}
+              {!isBonusType && (
+                <div className="flex rounded-[26px] bg-black/[0.04] dark:bg-white/[0.04] p-1.5 gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setIsPlanned(false)}
+                    className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-[20px] text-[15px] font-black transition-all duration-500
+                      ${!isPlanned ? 'bg-white dark:bg-white/10 shadow-xl text-[var(--primary-color)]' : 'text-gray-400 hover:text-gray-500'}
+                    `}
+                  >
+                    已完成
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsPlanned(true)}
+                    className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-[20px] text-[15px] font-black transition-all duration-500
+                      ${isPlanned ? 'bg-white dark:bg-white/10 shadow-xl text-[var(--primary-color)]' : 'text-gray-400 hover:text-gray-500'}
+                    `}
+                  >
+                    计划中
+                  </button>
+                </div>
+              )}
+
+              {/* interactive Pomodoro Timer */}
+              {!isPlanned && isCurrentTimeBlock && (
+                <div className="bg-[var(--primary-light)] rounded-[40px] p-7 border border-[var(--primary-color)]/10 space-y-6 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
+                    <Timer size={80} className="text-[var(--primary-color)]" />
+                  </div>
+
+                  <div className="flex items-center justify-between relative z-10">
+                    <div className="flex items-center gap-2 text-[var(--primary-color)]">
+                      <Timer size={20} className="animate-pulse" />
+                      <span className="text-[12px] font-black uppercase tracking-widest">专注番茄钟</span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-8 relative z-10">
+                    <div className="text-5xl font-black font-mono text-[var(--primary-color)] tabular-nums tracking-tighter">
+                      {formatTime(timeLeft)}
+                    </div>
+                    <button 
+                      onClick={() => setIsTimerRunning(!isTimerRunning)}
+                      className={`flex-1 py-4.5 rounded-[24px] font-black text-[15px] transition-all flex items-center justify-center gap-2 shadow-lg
+                        ${isTimerRunning 
+                          ? 'bg-amber-100 text-amber-600 ring-2 ring-amber-200' 
+                          : 'bg-[var(--primary-color)] text-white hover:brightness-110 active:scale-95'}
+                      `}
+                    >
+                      {isTimerRunning ? <><Pause size={20} fill="currentColor" /> 暂停</> : <><Play size={20} fill="currentColor" /> 开始</>}
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-4 pt-2 relative z-10">
+                     <p className="text-[12px] font-bold text-gray-500 dark:text-gray-400">产出：</p>
+                     <div className="flex gap-2.5">
+                        {[1, 2].map(num => (
+                          <button
+                            key={num}
+                            onClick={() => setPomodoros(num === pomodoros ? 0 : num)}
+                            className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all shadow-sm
+                              ${pomodoros >= num ? 'bg-[var(--primary-color)]/20 scale-110' : 'bg-black/[0.04] dark:bg-white/5 opacity-40 grayscale'}
+                            `}
+                          >
+                            🍅
+                          </button>
+                        ))}
+                     </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Energy Collection (Rating) */}
+              {!isPlanned && (
+                <div className="flex flex-col gap-5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[15px] font-black text-[var(--foreground)] opacity-90">能量收集</label>
+                  </div>
+                  <div className="bg-black/[0.02] dark:bg-white/[0.03] p-8 rounded-[40px] border border-[var(--border-color)] flex justify-center shadow-inner">
+                    <StarRating value={score} onChange={setScore} size={36} />
+                  </div>
+                </div>
+              )}
+
+              {/* Content Input */}
+              <div className="flex flex-col gap-4">
+                <label className="text-[15px] font-black text-[var(--foreground)] opacity-90 tracking-tight">
+                  {isPlanned ? '本时段核心行动目标' : '记录感悟'}
+                </label>
+                <textarea
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  placeholder={isPlanned ? "今天要做成什么？" : "此刻的感觉如何？"}
+                  className="w-full h-28 p-6 text-[16px] bg-black/[0.03] dark:bg-white/[0.05] border-2 border-transparent focus:border-[var(--primary-color)]/20 rounded-[32px] focus:outline-none transition-all resize-none font-bold placeholder:text-gray-300 dark:placeholder:text-gray-600 leading-relaxed"
+                />
+              </div>
+            </motion.div>
+          )}
         </div>
 
         {/* Footer */}

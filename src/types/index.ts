@@ -33,7 +33,9 @@ export interface UserSettings {
   primaryColor: PrimaryColor;
   showTagNamesInWeekView?: boolean;
   cloudSyncEnabled?: boolean;
-  showDetailsInWeekView?: boolean;
+  showDetailsInWeekView: boolean;
+  dailyEnergyGoal: number;
+  weeklyEnergyGoal: number;
 }
 
 export interface DayData {

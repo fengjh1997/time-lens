@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ChevronLeft, ChevronRight, Calendar, Star as StarIcon } from "lucide-react";
 import { type Score, type TimeBlock } from "@/types";
 import { useTimeStore } from "@/store/timeStore";
 import { MiniStarDisplay } from "@/components/ui/StarRating";
@@ -31,7 +32,7 @@ interface WeekGridProps {
 }
 
 export default function WeekGrid({ weekDates }: WeekGridProps) {
-  const { blocks, saveBlock, deleteBlock, getDayEnergy, settings } = useTimeStore();
+  const { blocks, saveBlock, deleteBlock, getBlock, getDayEnergy, getWeekEnergy, settings } = useTimeStore();
   const { pushBlock, deleteCloudBlock } = useSync();
   const [selectedCell, setSelectedCell] = useState<{date: string, hour: number | string} | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -112,30 +113,49 @@ export default function WeekGrid({ weekDates }: WeekGridProps) {
       />
 
       {/* Day Headers */}
-      <div className="flex border-b border-[var(--border-color)] sticky top-0 bg-[var(--background)]/80 backdrop-blur-md z-10 shadow-sm">
-        <div className="w-14 sm:w-16 shrink-0 border-r border-[var(--border-color)] flex items-center justify-center bg-[var(--hover-bg)]">
+      <div className="flex flex-col border-b border-[var(--border-color)] sticky top-0 bg-[var(--background)]/80 backdrop-blur-md z-10 shadow-sm">
+        <div className="flex items-center px-4 py-2 bg-[var(--primary-light)]/30">
+          <div className="flex-1 flex items-center gap-4">
+             <div className="flex items-center gap-2">
+                <StarIcon className="text-[var(--primary-color)] animate-pulse" size={14} />
+                <span className="text-[10px] font-black tracking-widest uppercase text-[var(--primary-color)]">本周能量进度 {Math.round((getWeekEnergy(weekDates) / settings.weeklyEnergyGoal) * 100)}%</span>
+             </div>
+             <div className="flex-1 h-1.5 bg-black/5 dark:bg-white/10 rounded-full overflow-hidden max-w-[200px]">
+                <motion.div 
+                  initial={{ width: 0 }}
+                  animate={{ width: `${Math.min((getWeekEnergy(weekDates) / settings.weeklyEnergyGoal) * 100, 100)}%` }}
+                  className="h-full bg-[var(--primary-color)] shadow-[0_0_8px_var(--primary-glow)]"
+                />
+             </div>
+          </div>
+          <div className="text-[10px] font-black opacity-40 uppercase tracking-widest">目标: {settings.weeklyEnergyGoal}★</div>
         </div>
-        <div className="flex-1 grid grid-cols-7">
-          {weekDates.map((date, idx) => {
-            const dayEnergy = getDayEnergy(date);
-            const dStr = date.split('-')[2];
-            const isWeekend = idx >= 5;
-            return (
-              <Link 
-                key={date} 
-                href={`/day?date=${date}`}
-                className={`py-3 sm:py-4 text-center border-r border-[var(--border-color)] last:border-r-0 hover:bg-[var(--primary-light)] transition-all cursor-pointer ${isWeekend ? 'bg-[var(--primary-color)]/[0.03] dark:bg-[var(--primary-color)]/[0.05]' : ''}`}
-              >
-                <div className="text-[10px] sm:text-[11px] font-black text-gray-400 tracking-widest uppercase">{DAYS_SHORT[idx]}</div>
-                <div className="text-base sm:text-xl font-black mt-1 text-[var(--foreground)]">{dStr}</div>
-                {dayEnergy !== 0 && (
-                  <div className={`text-[10px] font-black mt-1 ${dayEnergy > 0 ? 'text-[var(--primary-color)]' : 'text-red-400'}`}>
-                    {dayEnergy > 0 ? '+' : ''}{dayEnergy.toFixed(1)}★
-                  </div>
-                )}
-              </Link>
-            );
-          })}
+
+        <div className="flex">
+          <div className="w-14 sm:w-16 shrink-0 border-r border-[var(--border-color)] flex items-center justify-center bg-[var(--hover-bg)]">
+          </div>
+          <div className="flex-1 grid grid-cols-7">
+            {weekDates.map((date, idx) => {
+              const dayEnergy = getDayEnergy(date);
+              const dStr = date.split('-')[2];
+              const isWeekend = idx >= 5;
+              return (
+                <Link 
+                  key={date} 
+                  href={`/day?date=${date}`}
+                  className={`py-3 sm:py-4 text-center border-r border-[var(--border-color)] last:border-r-0 hover:bg-[var(--primary-light)] transition-all cursor-pointer ${isWeekend ? 'bg-[var(--primary-color)]/[0.03] dark:bg-[var(--primary-color)]/[0.05]' : ''}`}
+                >
+                  <div className="text-[10px] sm:text-[11px] font-black text-gray-400 tracking-widest uppercase">{DAYS_SHORT[idx]}</div>
+                  <div className="text-base sm:text-xl font-black mt-1 text-[var(--foreground)]">{dStr}</div>
+                  {dayEnergy !== 0 && (
+                    <div className={`text-[10px] font-black mt-1 ${dayEnergy > 0 ? 'text-[var(--primary-color)]' : 'text-red-400'}`}>
+                      {dayEnergy > 0 ? '+' : ''}{dayEnergy.toFixed(1)}★
+                    </div>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -196,15 +216,28 @@ export default function WeekGrid({ weekDates }: WeekGridProps) {
                 >
                   {(() => {
                     const block = blocks[`${dateStr}-bonus`];
+                    const isPlanned = block?.status === 'planned';
+                    const isCompleted = block?.status === 'completed';
+                    const isPrimaryTheme = isCompleted && block.score !== 0 && block.score !== -1;
                     return (
                       <div className={`w-full h-full rounded-[14px] bg-[var(--primary-color)]/5 hover:bg-[var(--primary-color)]/20 border border-[var(--primary-color)]/20 border-dashed flex items-center justify-center transition-all group-hover:scale-[1.03]`}>
                         {block ? (
                            <div className="flex flex-col items-center gap-0.5 px-1">
-                             <div className="flex items-center gap-1">
-                               <MiniStarDisplay score={block.score} size={11} />
-                               <span className="text-[11px] font-black text-[var(--primary-color)]">+{block.score}</span>
-                             </div>
-                             <span className="text-[9px] font-black text-[var(--foreground)] opacity-70 truncate w-full text-center px-1">{block.content}</span>
+                             {isCompleted && block.score !== 0 && (
+                               <div className="flex items-center justify-center">
+                                 <MiniStarDisplay score={block.score} size={11} color={isPrimaryTheme ? 'white' : undefined} />
+                               </div>
+                             )}
+                             {(settings.showDetailsInWeekView || isPlanned) && (
+                               <span className={`text-[9px] font-black truncate w-full text-center px-1
+                                 ${isPlanned ? 'text-[var(--primary-color)]' : isPrimaryTheme ? 'text-white/90' : 'text-[var(--foreground)] opacity-70'}
+                               `}>
+                                 {block.content}
+                               </span>
+                             )}
+                             {!settings.showDetailsInWeekView && block.score === 0 && !isPlanned && (
+                               <div className="w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-gray-700 opacity-20" />
+                             )}
                            </div>
                         ) : (
                           <PlusCircle size={18} className="text-[var(--primary-color)]/40 group-hover:text-[var(--primary-color)] transition-all group-hover:rotate-90" />
@@ -269,6 +302,7 @@ function WeekGridCell({
         drag={!!block}
         dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
         dragElastic={0.1}
+        dragTransition={{ bounceStiffness: 600, bounceDamping: 20 }}
         onDragEnd={handleDragEnd}
         onPointerDown={(e: React.PointerEvent) => {
           if (e.button === 0) startCharging();
@@ -305,7 +339,7 @@ function WeekGridCell({
               <div className="flex items-center gap-0.5 scale-[0.8] sm:scale-[0.9]">
                 <MiniStarDisplay score={block.score} size={10} color={isPrimaryTheme ? 'white' : undefined} />
                 {block.pomodoros && block.pomodoros > 0 && settings.showDetailsInWeekView && (
-                  <span className={`text-[8px] font-bold ${isPrimaryTheme ? 'text-white' : 'text-amber-500'}`}>🍅x{block.pomodoros}</span>
+                  <span className={`text-[8px] font-bold ${isPrimaryTheme ? 'text-white' : 'text-[var(--primary-color)]'}`}>🍅x{block.pomodoros}</span>
                 )}
               </div>
             )}

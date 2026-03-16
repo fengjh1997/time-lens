@@ -40,7 +40,7 @@ export default function SettingsPage() {
   
   const [newTagName, setNewTagName] = useState("");
   const [newTagEmoji, setNewTagEmoji] = useState("✨");
-  const [newTagColor, setNewTagColor] = useState("#f59e0b");
+  const [newTagColor, setNewTagColor] = useState("#10b981");
 
   const [editingTagId, setEditingTagId] = useState<string | null>(null);
 
@@ -93,8 +93,8 @@ export default function SettingsPage() {
             {/* Theme Toggle */}
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-[15px] font-black">界面主题</p>
-                <p className="text-[12px] text-gray-400 font-bold">目前处于 {settings.theme === 'light' ? '明亮' : '深色'} 模式</p>
+                <p className="text-[15px] font-black tracking-tight">界面主题</p>
+                <p className="text-[12px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">目前处于 {settings.theme === 'light' ? '明亮' : '深色'} 模式</p>
               </div>
               <div className="flex bg-black/[0.05] dark:bg-white/10 p-1 rounded-full">
                 <button 
@@ -115,6 +115,38 @@ export default function SettingsPage() {
                 >
                   <Moon size={14} /> 深色
                 </button>
+              </div>
+            </div>
+
+            {/* Energy Goals Settings */}
+            <div className="space-y-6 pt-6 border-t border-[var(--border-color)]">
+              <div className="flex items-center gap-2 mb-2">
+                <StarIcon size={16} className="text-[var(--primary-color)]" />
+                <span className="text-[14px] font-black tracking-tight uppercase">能量收集目标</span>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[15px] font-black">每日能量星级目标</p>
+                  <p className="text-[12px] text-gray-400 font-bold tracking-widest uppercase">DAY GOAL: {settings.dailyEnergyGoal}★</p>
+                </div>
+                <div className="flex items-center gap-4 bg-black/[0.05] dark:bg-white/10 px-4 py-2 rounded-2xl">
+                  <button onClick={() => updateSettings({ dailyEnergyGoal: Math.max(1, settings.dailyEnergyGoal - 1) })} className="p-1 px-3 bg-white dark:bg-white/5 rounded-lg font-black transition-all active:scale-90">-</button>
+                  <span className="w-8 text-center font-black">{settings.dailyEnergyGoal}</span>
+                  <button onClick={() => updateSettings({ dailyEnergyGoal: settings.dailyEnergyGoal + 1 })} className="p-1 px-3 bg-white dark:bg-white/5 rounded-lg font-black transition-all active:scale-90">+</button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[15px] font-black">每周能量星级目标</p>
+                  <p className="text-[12px] text-gray-400 font-bold tracking-widest uppercase">WEEK GOAL: {settings.weeklyEnergyGoal}★</p>
+                </div>
+                <div className="flex items-center gap-4 bg-black/[0.05] dark:bg-white/10 px-4 py-2 rounded-2xl">
+                  <button onClick={() => updateSettings({ weeklyEnergyGoal: Math.max(7, settings.weeklyEnergyGoal - 5) })} className="p-1 px-3 bg-white dark:bg-white/5 rounded-lg font-black transition-all active:scale-90">-</button>
+                  <span className="w-8 text-center font-black">{settings.weeklyEnergyGoal}</span>
+                  <button onClick={() => updateSettings({ weeklyEnergyGoal: settings.weeklyEnergyGoal + 5 })} className="p-1 px-3 bg-white dark:bg-white/5 rounded-lg font-black transition-all active:scale-90">+</button>
+                </div>
               </div>
             </div>
 

@@ -30,6 +30,8 @@ const DEFAULT_SETTINGS: UserSettings = {
   primaryColor: 'emerald',
   cloudSyncEnabled: false, 
   showDetailsInWeekView: true,
+  dailyEnergyGoal: 5,
+  weeklyEnergyGoal: 30,
 };
 
 interface TimeDataStore {
@@ -43,6 +45,7 @@ interface TimeDataStore {
   getBlock: (dateStr: string, hourId: number | string) => TimeBlock | undefined;
   getBlocksForDate: (dateStr: string) => TimeBlock[];
   getDayEnergy: (dateStr: string) => number;
+  getWeekEnergy: (weekDates: string[]) => number;
 
   addTag: (tag: Tag) => void;
   removeTag: (id: string) => void;
@@ -126,6 +129,15 @@ export const useTimeStore = create<TimeDataStore>()(
           .reduce((acc, b) => acc + SCORE_ENERGY[b.score], 0);
       },
 
+      getWeekEnergy: (weekDates: string[]) => {
+        const allBlocks = get().blocks;
+        return Object.keys(allBlocks)
+          .filter(key => weekDates.some((d: string) => key.startsWith(d)))
+          .map(key => allBlocks[key])
+          .filter(b => b.status === 'completed')
+          .reduce((acc, b) => acc + SCORE_ENERGY[b.score], 0);
+      },
+
       addTag: (tag) => set((state) => ({ tags: [...state.tags, tag] })),
       removeTag: (id) => set((state) => ({ tags: state.tags.filter(t => t.id !== id) })),
       updateTag: (tag) => set((state) => ({
@@ -171,9 +183,21 @@ export const useTimeStore = create<TimeDataStore>()(
       onRehydrateStorage: () => (state) => {
         if (state) {
           const total = Object.values(state.blocks)
-            .filter(b => b.status === 'completed')
-            .reduce((acc, b) => acc + SCORE_ENERGY[b.score], 0);
+            .filter(b => (b as any).status === 'completed')
+            .reduce((acc, b) => acc + SCORE_ENERGY[(b as any).score], 0);
           state.totalEnergy = total;
+          
+          // Ensure new settings fields are initialized for existing users
+          if (state.settings) {
+            if (!state.settings.dailyEnergyGoal || isNaN(state.settings.dailyEnergyGoal)) {
+              state.settings.dailyEnergyGoal = DEFAULT_SETTINGS.dailyEnergyGoal;
+            }
+            if (!state.settings.weeklyEnergyGoal || isNaN(state.settings.weeklyEnergyGoal)) {
+              state.settings.weeklyEnergyGoal = DEFAULT_SETTINGS.weeklyEnergyGoal;
+            }
+          } else {
+            state.settings = DEFAULT_SETTINGS;
+          }
         }
       }
     }

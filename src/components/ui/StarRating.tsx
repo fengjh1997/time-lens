@@ -16,7 +16,7 @@ const SCORES: Score[] = [-1, 0, 0.25, 0.5, 0.75, 1];
 
 const SCORE_DISPLAY: Record<Score, { label: string; shortLabel: string }> = {
   "-1": { label: "荒废内耗", shortLabel: "✕" },
-  "0":  { label: "空闲", shortLabel: "○" },
+  "0":  { label: "空闲", shortLabel: "" },
   "0.25": { label: "轻度维持", shortLabel: "¼" },
   "0.5": { label: "常规输出", shortLabel: "½" },
   "0.75": { label: "高效专注", shortLabel: "¾" },

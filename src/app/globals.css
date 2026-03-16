@@ -9,7 +9,7 @@
 
 :root {
   /* Dynamic Primary Color Palette (Default: Emerald) */
-  --primary-rgb: 16 185 129; 
+  --primary-rgb: 16, 185, 129; 
   --primary-color: rgb(var(--primary-rgb));
   --primary-light: rgba(var(--primary-rgb), 0.1);
   --primary-glow: rgba(var(--primary-rgb), 0.3);
@@ -37,10 +37,10 @@
 }
 
 /* Color Themes */
-.theme-emerald { --primary-rgb: 16 185 129; }
-.theme-violet { --primary-rgb: 139 92 246; }
-.theme-blue { --primary-rgb: 59 130 246; }
-.theme-amber { --primary-rgb: 245 158 11; }
+.theme-emerald { --primary-rgb: 16, 185, 129; }
+.theme-violet { --primary-rgb: 139, 92, 246; }
+.theme-blue { --primary-rgb: 59, 130, 246; }
+.theme-amber { --primary-rgb: 245, 158, 11; }
 
 /* Global Dark Mode Overrides (Refined for "Premium" Appeal) */
 .dark {
