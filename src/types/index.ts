@@ -30,6 +30,8 @@ export interface UserSettings {
   hideSleepTime: boolean;
   theme: 'light' | 'dark';
   primaryColor: PrimaryColor;
+  showTagNamesInWeekView?: boolean;
+  cloudSyncEnabled?: boolean;
 }
 
 export interface DayData {

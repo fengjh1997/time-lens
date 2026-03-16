@@ -35,7 +35,8 @@ const PRIMARY_COLORS: { id: PrimaryColor, color: string, name: string }[] = [
 export default function SettingsPage() {
   const { tags, addTag, removeTag, updateTag, settings, updateSettings, toggleTheme, exportData, importData, clearAllData } = useTimeStore();
   const { user, profile } = useAuthStore();
-  const { pushSettings } = useSync();
+  const { pushSettings, manualSync } = useSync();
+  const { isSyncing, lastSyncedAt } = useTimeStore();
   
   const [newTagName, setNewTagName] = useState("");
   const [newTagEmoji, setNewTagEmoji] = useState("✨");
@@ -151,27 +152,56 @@ export default function SettingsPage() {
         <section className="space-y-4">
           <SectionHeader icon={<Cloud size={18} />} title="云端同步状态" />
           {user ? (
-            <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-[32px] p-7 text-white shadow-xl shadow-emerald-500/20 relative overflow-hidden group">
+            <div className={`rounded-[32px] p-7 text-white shadow-xl transition-all duration-500 relative overflow-hidden group
+              ${settings.cloudSyncEnabled 
+                ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-emerald-500/20' 
+                : 'bg-gradient-to-br from-gray-500 to-gray-600 shadow-gray-500/20'
+              }
+            `}>
                <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-125 transition-transform duration-700">
                  <ShieldCheck size={120} />
                </div>
-               <div className="flex items-center gap-4 mb-4">
-                 <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center">
-                   <Cloud size={24} />
+               <div className="flex items-center justify-between mb-6">
+                 <div className="flex items-center gap-4">
+                   <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center">
+                     <Cloud size={24} />
+                   </div>
+                   <div>
+                     <p className="text-[11px] font-black opacity-80 uppercase tracking-widest">Storage Mode</p>
+                     <h3 className="text-xl font-black">{settings.cloudSyncEnabled ? '云端实时同步' : '本地优先模式'}</h3>
+                   </div>
                  </div>
-                 <div>
-                   <p className="text-[11px] font-black opacity-80 uppercase tracking-widest">Cloud Connected</p>
-                   <h3 className="text-xl font-black">云端同步已开启</h3>
-                 </div>
-               </div>
-               <p className="text-[12px] font-bold opacity-90 leading-relaxed">
-                 欢迎回来，<span className="underline decoration-2 underline-offset-4">{profile?.full_name || user.email}</span>！您的所有记录与设置已通过 Supabase 安全加密并实时同步。
-               </p>
-               <div className="mt-6 flex gap-3">
-                 <button className="px-5 py-2 bg-white/20 backdrop-blur-md rounded-full text-[12px] font-black hover:bg-white/30 transition-all flex items-center gap-2">
-                   <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
-                   服务运行中
+                 
+                 <button 
+                   onClick={() => {
+                     updateSettings({ cloudSyncEnabled: !settings.cloudSyncEnabled });
+                     setTimeout(pushSettings, 100);
+                   }}
+                   className={`w-14 h-7 rounded-full relative transition-all duration-300 ${settings.cloudSyncEnabled ? 'bg-white/30' : 'bg-black/20'}`}
+                 >
+                   <div className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-all shadow-sm ${settings.cloudSyncEnabled ? 'left-8' : 'left-1'}`} />
                  </button>
+               </div>
+               
+               <p className="text-[12px] font-bold opacity-90 leading-relaxed">
+                 {settings.cloudSyncEnabled 
+                   ? `数据正在实时加密同步至云端。欢迎回来，${profile?.full_name || user.email}。`
+                   : "数据当前仅保存在您的设备本地。您可以随时手动同步或开启实时同步以确保数据安全。"
+                 }
+               </p>
+               
+               <div className="mt-6 flex flex-wrap gap-3">
+                 <button 
+                  onClick={manualSync}
+                  disabled={isSyncing}
+                  className="px-5 py-2 bg-white/20 backdrop-blur-md rounded-full text-[12px] font-black hover:bg-white/30 transition-all flex items-center gap-2 disabled:opacity-50"
+                 >
+                   {isSyncing ? (
+                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                   ) : <Upload size={14} />}
+                   {isSyncing ? '同步中...' : '立即手动同步'}
+                 </button>
+                 
                  <button 
                   onClick={() => location.reload()}
                   className="px-5 py-2 bg-black/10 rounded-full text-[12px] font-black hover:bg-black/20 transition-all flex items-center gap-2"
@@ -180,6 +210,10 @@ export default function SettingsPage() {
                    强制拉取刷新
                  </button>
                </div>
+               
+               {lastSyncedAt && (
+                 <p className="mt-4 text-[10px] font-bold opacity-50 uppercase tracking-widest">上次同步: {new Date(lastSyncedAt).toLocaleString()}</p>
+               )}
             </div>
           ) : (
             <div className="bg-gradient-to-br from-[var(--primary-color)] to-[var(--primary-color)]/70 rounded-[32px] p-7 text-white shadow-xl shadow-[var(--primary-glow)] relative overflow-hidden group">
@@ -330,9 +364,9 @@ export default function SettingsPage() {
         <div className="text-center pb-20 opacity-30">
           <div className="flex items-center justify-center gap-2 mb-2">
             <StarIcon size={14} fill="currentColor" />
-            <span className="text-[11px] font-black tracking-widest uppercase">Time Lens v6.1.0 Stable</span>
+            <span className="text-[11px] font-black tracking-widest uppercase">Time Lens v6.5.1 PWA</span>
           </div>
-          <p className="text-[10px] font-bold uppercase tracking-widest">Enhanced with Cloud Sync & UI Harmony</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest">Mobile-First & Offline Optimized</p>
         </div>
       </div>
     </div>

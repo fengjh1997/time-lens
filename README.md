@@ -1,60 +1,50 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Time Lens (星辰透镜) ✦
 
-## Getting Started
+捕捉每一刻的心流状态 — 为 iOS 和桌面打造的沉浸式 PWA 时间管理系统。
 
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-
-## Git 版本管理指南 (新手友好版)
-
-虽然这个应用目前是离线本地运行，但使用 Git 可以帮你记录每一次大的改动，防止代码写乱。
-
-### 1. 如何查看历史版本？
-如果你想回到之前的版本，或者查看改了什么：
-- **查看日志**：`git log --oneline` (这将显示所有提交的版本号和简介)
-- **跳转到旧版本**：`git checkout [版本号]` (注意：这会把代码回退到那个时刻)
-- **回到最新版**：`git checkout master`
-
-### 2. 核心操作流程
-每次你让 AI 完成一个大功能后，建议执行一次备份：
-- `git add .` (把改动放入“暂存区”)
-- `git commit -m "描述你改了什么"` (正式保存一个版本)
+> **心流能量，而非仅仅是时间。** Time Lens 记录的不是任务，而是你的生命能效。
 
 ---
 
-## 项目文档
-- [产品需求文档 (PRD)](PRODUCT_PRD.md)
-- [产品开发日志 (Changelog)](CHANGELOG.md)
+## 📱 PWA (移动端优先)
+本项目已完全适配 PWA 标准，针对 **iOS 设备** 进行了深度优化：
+- **离线运行**：即使没有网络，记录依然精准留存。
+- **独立桌面体验**：支持“添加到主屏幕”，享受全屏沉浸式交互。
+- **本地优先架构**：数据默认存储在本地，隐私有保障；支持手动开启云端同步。
 
-## 部署与分享
-本项目已针对 Vercel 进行优化。运行 `npx vercel` 即可一键部署到公网。
+## ✨ 核心功能清单
+
+### 1. 维度探索系统 (Dimension Exploration)
+- **今日焦点 (Day View)**：垂直时间轴，精准捕捉 15 分钟级的能耗分布。
+- **一周规划 (Week View)**：全景视野，支持任务预设与历史能效热力图回顾。
+- **全景热力图**：月/年视图动态热力化，量化生命能效密度。
+
+### 2. 能量采集指标 (Energy Metrics)
+- **星辰评分 (Star Rating)**：0 - 1.0 的四档评分，精准定义每一小时的心流质量。
+- **互动番茄钟**：动态出现的倒计时工具，记录专注的每一刻。
+- **额外增益 (Bonus Time)**：捕捉计划外的闪光点。
+
+### 3. 本地优先同步 (Controlled Sync)
+- **Supabase 强力驱动**：云端同步作为可选插件存在。
+- **手动双向同步**：用户主动控制数据上云与下发，杜绝数据自动冲突。
+- **身份验证**：支持邮箱与社交账号登录。
+
+### 4. 极致美学设计 (Aesthetic UI)
+- **Super Round**：极致圆润的 UI 符号。
+- **玻璃拟态**：深浅模式切换下的剔透质感。
+- **主题引擎**：琥珀、翡翠、紫罗兰、蔚蓝 四大色彩体系。
+
+## 🛠️ 技术栈
+- **前端框架**: Next.js 15 (App Router)
+- **状态管理**: Zustand (Persist Middleware)
+- **离线支持**: next-pwa (@ducanh2912/next-pwa)
+- **后端服务**: Supabase (Auth, DB, RLS)
+- **UI & 动效**: Framer Motion, Lucide Icons
+
+## 快速开始
+1. **安装依赖**: `npm install`
+2. **启动开发环境**: `npm run dev`
+3. **开启 PWA**: 构建应用后，通过手机浏览器访问并“添加到主屏幕”。
+
+---
+*Time Lens 正在持续进化中...*

@@ -4,13 +4,20 @@ import { useEffect, useCallback, useRef } from 'react';
 import { useTimeStore } from '@/store/timeStore';
 import { useAuthStore } from '@/store/authStore';
 import { supabase } from '@/lib/supabase';
-import { TimeBlock } from '@/types';
+import { TimeBlock, Tag } from '@/types';
 
 export function useSync() {
-  const { blocks, saveBlock, settings, updateSettings } = useTimeStore();
+  const { 
+    blocks, 
+    saveBlock, 
+    settings, 
+    updateSettings, 
+    tags, 
+    addTag,
+    setSyncStatus 
+  } = useTimeStore();
   const { user } = useAuthStore();
   
-  // Use a ref to prevent infinite loops when syncing back from cloud
   const isSyncingFromCloud = useRef(false);
 
   // 1. Fetch from Cloud on Login
@@ -66,11 +73,57 @@ export function useSync() {
     };
 
     pullData();
-  }, [user, saveBlock, updateSettings]);
+  }, [user, settings.cloudSyncEnabled, saveBlock, updateSettings]);
 
-  // Push Logic (Individual updates are better handled in saveBlock, but for now we listen to change)
+  // 1b. Manual Full Sync
+  const manualSync = useCallback(async () => {
+    if (!user) return;
+    setSyncStatus(true);
+    try {
+      // Logic to push all local data to cloud
+      // Pushing Settings
+      await supabase.from('settings').upsert({
+        user_id: user.id,
+        theme: settings.theme,
+        primary_color: settings.primaryColor,
+        hide_sleep_time: settings.hideSleepTime,
+        decimal_places: settings.decimalPlaces,
+        updated_at: new Date().toISOString(),
+      });
+
+      // Pushing Blocks (simplified for now: push all)
+      const blockEntries = Object.entries(blocks).map(([key, block]) => {
+        const dateStr = key.split('-').slice(0, 3).join('-'); // Extract YYYY-MM-DD
+        return {
+          id: block.id,
+          user_id: user.id,
+          date: dateStr,
+          hour_id: block.hourId,
+          content: block.content,
+          score: block.score,
+          tag_id: block.tagId,
+          status: block.status,
+          pomodoros: block.pomodoros,
+          is_bonus: block.isBonus,
+          updated_at: new Date().toISOString(),
+        };
+      });
+
+      if (blockEntries.length > 0) {
+        await supabase.from('blocks').upsert(blockEntries);
+      }
+      
+      console.log("Manual sync completed");
+    } catch (err) {
+      console.error("Manual sync error:", err);
+    } finally {
+      setSyncStatus(false);
+    }
+  }, [user, blocks, settings, setSyncStatus]);
+
+  // Push Logic
   const pushBlock = useCallback(async (block: TimeBlock, dateStr: string) => {
-    if (!user || isSyncingFromCloud.current) return;
+    if (!user || isSyncingFromCloud.current || !settings.cloudSyncEnabled) return;
 
     await supabase.from('blocks').upsert({
       id: block.id,
@@ -85,15 +138,15 @@ export function useSync() {
       is_bonus: block.isBonus,
       updated_at: new Date().toISOString(),
     });
-  }, [user]);
+  }, [user, settings.cloudSyncEnabled]);
 
   const deleteCloudBlock = useCallback(async (blockId: string) => {
-    if (!user || isSyncingFromCloud.current) return;
+    if (!user || isSyncingFromCloud.current || !settings.cloudSyncEnabled) return;
     await supabase.from('blocks').delete().eq('id', blockId).eq('user_id', user.id);
-  }, [user]);
+  }, [user, settings.cloudSyncEnabled]);
 
   const pushSettings = useCallback(async () => {
-    if (!user || isSyncingFromCloud.current) return;
+    if (!user || isSyncingFromCloud.current || !settings.cloudSyncEnabled) return;
     await supabase.from('settings').upsert({
       user_id: user.id,
       theme: settings.theme,
@@ -104,5 +157,5 @@ export function useSync() {
     });
   }, [user, settings]);
 
-  return { pushBlock, deleteCloudBlock, pushSettings };
+  return { pushBlock, deleteCloudBlock, pushSettings, manualSync };
 }

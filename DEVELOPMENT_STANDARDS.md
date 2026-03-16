@@ -34,15 +34,25 @@
 
 ## 4. 后端与数据标准 (Backend & Data)
 
-- **架构演进**：已确立从 `localStorage` 转向 **Supabase** 为核心后端，实现云端同步与用户注册。
-- **隐私标准**：在云端化的同时，应保留导出 JSON 的本地备份能力。
+- **架构准则**：采取 **离线优先 (Offline-First)** 策略。
+- **存储模式**：
+  - **本地持久化**：所有日常操作优先在本地 Zustand + Persist 中完成。
+  - **手动云端同步**：`cloudSyncEnabled` 默认关闭。用户手动触发同步时，才将本地差异推送至 Supabase。
+- **数据一致性**：同步逻辑应支持增量更新，避免因网络波动或多端同时操作导致的数据覆盖。
 
-## 5. 文档维护要求 (Documentation)
+## 5. PWA 开发规范 (PWA Standards)
+
+- **移动优先**：所有交互必须优先适配 iOS Safari/PWA。触摸热区不得小于 `44x44px`。
+- **适配标签**：保持 `manifest.json` 与 `layout.tsx` 中的 PWA meta 标签同步更新。
+- **资源缓存**：确保 Service Worker 正确缓存核心资源，保证离线可用性。
+
+## 6. 文档维护要求 (Documentation)
 
 每一阶段开发完成后，必须同步更新以下文档：
-1. **[PRODUCT_PRD.md](file:///g:/vibe-coding/time-lens/PRODUCT_PRD.md)**：更新产品功能定义与方向。
-2. **[CHANGELOG.md](file:///g:/vibe-coding/time-lens/CHANGELOG.md)**：详细记录新增需求、迭代点与修复项。
-3. **[DEVELOPMENT_STANDARDS.md](file:///g:/vibe-coding/time-lens/DEVELOPMENT_STANDARDS.md)**：本准则文档。
+1. **[README.md](file:///g:/vibe-coding/time-lens/README.md)**：作为项目唯一真相来源 (Single Source of Truth)，整合原 PRD 内容。已删除独立 PRD。
+2. **[CHANGELOG.md](file:///g:/vibe-coding/time-lens/CHANGELOG.md)**：记录详细迭代点。
+3. **[回顾.md](file:///g:/vibe-coding/%E5%8F%82%E8%80%83/%E5%9B%9E%E9%42%BE.md)**：将每一版本的 `README` 和 `WALKTHROUGH` 增量写入此文件。
+4. **[DEVELOPMENT_STANDARDS.md](file:///g:/vibe-coding/time-lens/DEVELOPMENT_STANDARDS.md)**：本准则文档。
 
 ---
-*版本更新日期：2026-03-14*
+*上次修订：2026-03-16*

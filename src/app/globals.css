@@ -74,6 +74,10 @@ body {
 }
 
 /* --- CLASSSMORPHISM & AMBIENT BACKGROUND --- */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
 .ambient-bg {
   position: fixed;
   top: 0;

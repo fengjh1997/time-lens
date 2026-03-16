@@ -28,6 +28,7 @@ const DEFAULT_SETTINGS: UserSettings = {
   theme: 'light',
   hideSleepTime: true,
   primaryColor: 'amber',
+  cloudSyncEnabled: false, // 默认关闭云端同步，用户主动开启
 };
 
 interface TimeDataStore {
@@ -52,6 +53,12 @@ interface TimeDataStore {
   exportData: () => string;
   importData: (json: string) => boolean;
   clearAllData: () => void;
+  
+  // 云端同步相关
+  isSyncing: boolean;
+  lastSyncedAt: string | null;
+  setSyncStatus: (status: boolean) => void;
+  setLastSyncedAt: (at: string) => void;
 }
 
 export const useTimeStore = create<TimeDataStore>()(
@@ -61,6 +68,11 @@ export const useTimeStore = create<TimeDataStore>()(
       totalEnergy: 0,
       tags: DEFAULT_TAGS,
       settings: DEFAULT_SETTINGS,
+      isSyncing: false,
+      lastSyncedAt: null,
+
+      setSyncStatus: (status) => set({ isSyncing: status }),
+      setLastSyncedAt: (at) => set({ lastSyncedAt: at }),
 
       saveBlock: (dateStr, newBlock) => {
         set((state) => {
