@@ -2,37 +2,35 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, ChartColumnBig, Compass, Settings, SunMedium } from "lucide-react";
+import { ChartColumnBig, Compass, Settings } from "lucide-react";
+
+const navItems = [
+  { href: "/", label: "画布", icon: Compass, matches: ["/", "/day", "/month"] },
+  { href: "/dashboard", label: "数据", icon: ChartColumnBig, matches: ["/dashboard"] },
+  { href: "/settings", label: "设置", icon: Settings, matches: ["/settings", "/auth"] },
+];
 
 export default function MobileNav() {
   const pathname = usePathname();
 
-  const navItems = [
-    { name: "日", href: "/day", icon: SunMedium },
-    { name: "周", href: "/", icon: Compass },
-    { name: "全景", href: "/month", icon: CalendarDays },
-    { name: "数据", href: "/dashboard", icon: ChartColumnBig },
-    { name: "设置", href: "/settings", icon: Settings },
-  ];
-
   return (
-    <nav className="fixed bottom-0 left-0 right-0 sm:hidden z-50 border-t border-[var(--border-color)] glass-panel">
-      <div className="flex items-center justify-around px-2 py-2 safe-bottom">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 sm:hidden">
+      <div className="glass-panel mx-3 mb-3 flex items-center justify-around rounded-[24px] px-2 py-2 safe-bottom">
         {navItems.map((item) => {
-          const isActive = pathname === item.href;
+          const active = item.matches.some((match) => (match === "/" ? false : pathname.startsWith(match))) ||
+            (item.href === "/" && (pathname === "/" || pathname === "/day" || pathname === "/month"));
           const Icon = item.icon;
+
           return (
             <Link
-              key={item.name}
+              key={item.href}
               href={item.href}
-              className={`flex min-w-[56px] flex-col items-center gap-1 rounded-2xl px-3 py-2 text-[10px] font-black transition-all ${
-                isActive
-                  ? "bg-[var(--primary-light)] text-[var(--primary-color)]"
-                  : "text-gray-400"
+              className={`flex min-w-[72px] flex-col items-center gap-1 rounded-[18px] px-3 py-2 text-[10px] font-black transition-all ${
+                active ? "bg-[var(--primary-light)] text-[var(--primary-color)]" : "text-faint"
               }`}
             >
-              <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
-              <span>{item.name}</span>
+              <Icon size={20} strokeWidth={active ? 2.5 : 2} />
+              <span>{item.label}</span>
             </Link>
           );
         })}

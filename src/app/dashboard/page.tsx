@@ -1,16 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Clock3, Flame, Target, TrendingUp, Zap } from "lucide-react";
-import { EnergyDisplay } from "@/components/ui/StarRating";
+import { useMemo } from "react";
+import { ArrowUpRight, CircleGauge, Clock3, Layers3, Sparkles, Target, TrendingUp } from "lucide-react";
 import { SCORE_ENERGY, useTimeStore } from "@/store/timeStore";
 
 export default function DashboardPage() {
-  const { blocks, totalEnergy, tags, settings } = useTimeStore();
-  const [selectedTagId, setSelectedTagId] = useState<string | undefined>(tags[0]?.id);
-
+  const { blocks, tags, settings } = useTimeStore();
   const completedBlocks = Object.values(blocks).filter((block) => block.status === "completed");
-  const totalBlocks = completedBlocks.length;
 
   const last7Days = useMemo(() => {
     return Array.from({ length: 7 }, (_, index) => {
@@ -31,108 +27,112 @@ export default function DashboardPage() {
     return { hour, energy };
   });
 
-  const bestHour = hourly.reduce((best, current) => (current.energy > best.energy ? current : best), hourly[0]);
-  const currentStreak = last7Days.reduceRight((streak, day, index, arr) => {
-    if (day.energy > 0) return streak + 1;
-    return index === arr.length - 1 ? streak : streak;
-  }, 0);
-
-  const tagCounts = tags.map((tag) => ({
+  const tagMap = tags.map((tag) => ({
     ...tag,
-    count: completedBlocks.filter((block) => block.tagId === tag.id).length,
-  }));
+    energy: completedBlocks
+      .filter((block) => block.tagId === tag.id)
+      .reduce((sum, block) => sum + SCORE_ENERGY[block.score], 0),
+  })).sort((left, right) => right.energy - left.energy);
 
-  const selectedTag = tags.find((tag) => tag.id === selectedTagId);
+  const totalEnergy = completedBlocks.reduce((sum, block) => sum + SCORE_ENERGY[block.score], 0);
+  const bestHour = hourly.reduce((best, current) => (current.energy > best.energy ? current : best), hourly[0]);
+  const strongestDay = last7Days.reduce((best, current) => (current.energy > best.energy ? current : best), last7Days[0]);
 
   return (
     <div className="h-full overflow-y-auto bg-[var(--background)] pb-32 sm:pb-10">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-5 sm:px-6">
-        <section className="rounded-[32px] border border-[var(--border-color)] bg-white/75 p-5 shadow-[var(--shadow-sm)] dark:bg-white/5">
-          <p className="text-[11px] uppercase tracking-[0.3em] text-[var(--primary-color)] font-black">Insights</p>
-          <h1 className="mt-2 text-3xl font-black">数据概览</h1>
-          <p className="mt-2 text-sm text-gray-500">用更轻量的方式看趋势，不抢占主操作流。</p>
-        </section>
-
-        <section className="grid gap-4 md:grid-cols-4">
-          <SummaryCard icon={<Zap size={18} />} label="总能量" value={<EnergyDisplay value={totalEnergy} decimals={settings.decimalPlaces} />} />
-          <SummaryCard icon={<Flame size={18} />} label="已完成块" value={String(totalBlocks)} />
-          <SummaryCard icon={<TrendingUp size={18} />} label="连续正能量" value={`${currentStreak} 天`} />
-          <SummaryCard icon={<Clock3 size={18} />} label="黄金时段" value={`${bestHour.hour}:00`} />
-        </section>
-
-        <section className="grid gap-6 lg:grid-cols-[1.3fr_1fr]">
-          <div className="rounded-[32px] border border-[var(--border-color)] bg-white/75 p-5 shadow-[var(--shadow-sm)] dark:bg-white/5">
-            <div className="flex items-center gap-2">
-              <TrendingUp size={18} className="text-[var(--primary-color)]" />
-              <h2 className="text-lg font-black">近 7 天能量</h2>
+      <div className="mx-auto grid max-w-6xl gap-4 px-4 py-4 sm:px-6 sm:py-5 lg:grid-cols-[1.2fr_0.8fr]">
+        <section className="glass-card-strong rounded-[34px] p-5">
+          <div className="flex items-center justify-between">
+            <div className="inline-flex items-center gap-2 rounded-full bg-[var(--primary-light)] px-3 py-1.5 text-[12px] font-black text-[var(--primary-color)]">
+              <Sparkles size={14} />
+              洞察
             </div>
+            <ArrowUpRight size={16} className="text-faint" />
+          </div>
 
-            <div className="mt-6 flex h-56 items-end gap-3">
-              {last7Days.map((day) => (
-                <div key={day.date} className="flex flex-1 flex-col items-center gap-2">
-                  <div className="text-[12px] font-black text-[var(--primary-color)]">{day.energy.toFixed(settings.decimalPlaces)}</div>
-                  <div className="flex w-full items-end justify-center rounded-[22px] bg-black/[0.03] dark:bg-white/[0.04]">
+          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+            <MetricTile icon={<CircleGauge size={16} />} label="总能量" value={totalEnergy.toFixed(settings.decimalPlaces)} />
+            <MetricTile icon={<Clock3 size={16} />} label="强势时段" value={`${String(bestHour.hour).padStart(2, "0")}:00`} />
+            <MetricTile icon={<Target size={16} />} label="高光日" value={strongestDay?.date || "--"} />
+          </div>
+
+          <div className="mt-5 rounded-[28px] border border-[var(--border-color)] p-4">
+            <div className="mb-4 flex items-center gap-2">
+              <TrendingUp size={16} className="text-[var(--primary-color)]" />
+              <span className="text-sm font-black">近 7 天节奏</span>
+            </div>
+            <div className="flex h-48 items-end gap-3">
+              {last7Days.map((day) => {
+                const height = Math.max(16, Math.abs(day.energy) * 28);
+                return (
+                  <div key={day.date} className="flex flex-1 flex-col items-center gap-2">
+                    <div className="text-[11px] font-black text-faint">{day.date}</div>
+                    <div className="flex w-full flex-1 items-end rounded-[24px] bg-black/[0.03] p-1 dark:bg-white/[0.04]">
+                      <div
+                        className="w-full rounded-[20px] bg-[var(--primary-color)]"
+                        style={{ height, opacity: day.energy === 0 ? 0.18 : 0.95 }}
+                      />
+                    </div>
+                    <div className="text-[11px] font-black">{day.energy.toFixed(settings.decimalPlaces)}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        <section className="grid gap-4">
+          <div className="glass-card rounded-[30px] p-4">
+            <div className="mb-4 flex items-center gap-2">
+              <Layers3 size={16} className="text-[var(--primary-color)]" />
+              <span className="text-sm font-black">标签能量</span>
+            </div>
+            <div className="space-y-3">
+              {tagMap.slice(0, 6).map((tag) => (
+                <div key={tag.id}>
+                  <div className="mb-1.5 flex items-center justify-between text-[13px] font-black">
+                    <span className="inline-flex items-center gap-2">
+                      <span>{tag.emoji}</span>
+                      <span>{tag.name}</span>
+                    </span>
+                    <span style={{ color: tag.color }}>{tag.energy.toFixed(settings.decimalPlaces)}</span>
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-black/[0.05] dark:bg-white/[0.06]">
                     <div
-                      className="w-full rounded-[22px] bg-[var(--primary-color)]"
-                      style={{ height: `${Math.max(12, Math.abs(day.energy) * 28)}px`, opacity: day.energy === 0 ? 0.2 : 1 }}
+                      className="h-full rounded-full"
+                      style={{
+                        width: `${Math.max(6, (Math.abs(tag.energy) / Math.max(Math.abs(totalEnergy), 1)) * 100)}%`,
+                        backgroundColor: tag.color,
+                      }}
                     />
                   </div>
-                  <div className="text-[11px] font-black text-gray-400">{day.date}</div>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="rounded-[32px] border border-[var(--border-color)] bg-white/75 p-5 shadow-[var(--shadow-sm)] dark:bg-white/5">
-            <div className="flex items-center gap-2">
-              <Target size={18} className="text-[var(--primary-color)]" />
-              <h2 className="text-lg font-black">标签分布</h2>
+          <div className="glass-card rounded-[30px] p-4">
+            <div className="mb-4 flex items-center gap-2">
+              <Clock3 size={16} className="text-[var(--primary-color)]" />
+              <span className="text-sm font-black">24 小时分布</span>
             </div>
-
-            <div className="mt-4 flex flex-wrap gap-2">
-              {tags.map((tag) => (
-                <button
-                  key={tag.id}
-                  type="button"
-                  onClick={() => setSelectedTagId(tag.id)}
-                  className={`rounded-full px-4 py-2 text-[12px] font-black transition-all ${
-                    selectedTagId === tag.id ? "text-white" : "bg-black/[0.03] text-gray-500 dark:bg-white/[0.04]"
-                  }`}
-                  style={selectedTagId === tag.id ? { backgroundColor: tag.color } : undefined}
+            <div className="grid grid-cols-6 gap-2">
+              {hourly.map((item) => (
+                <div
+                  key={item.hour}
+                  className="rounded-[16px] border border-[var(--border-color)] px-2 py-2 text-center"
+                  style={{
+                    backgroundColor:
+                      item.energy === 0
+                        ? "var(--panel-soft)"
+                        : `rgba(var(--primary-rgb), ${0.15 + Math.min(Math.abs(item.energy) / 5, 1) * 0.7})`,
+                  }}
                 >
-                  {tag.emoji} {tag.name}
-                </button>
+                  <div className="text-[10px] font-black text-faint">{String(item.hour).padStart(2, "0")}</div>
+                  <div className="mt-1 text-[11px] font-black">{item.energy.toFixed(0)}</div>
+                </div>
               ))}
             </div>
-
-            <div className="mt-6 space-y-4">
-              {tagCounts
-                .filter((tag) => tag.count > 0)
-                .sort((left, right) => right.count - left.count)
-                .map((tag) => (
-                  <div key={tag.id}>
-                    <div className="mb-2 flex items-center justify-between text-sm font-black">
-                      <span>{tag.name}</span>
-                      <span className="text-gray-400">{tag.count}</span>
-                    </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-black/[0.05] dark:bg-white/[0.06]">
-                      <div
-                        className="h-full rounded-full"
-                        style={{
-                          width: `${Math.max(6, (tag.count / Math.max(totalBlocks, 1)) * 100)}%`,
-                          backgroundColor: tag.color,
-                        }}
-                      />
-                    </div>
-                  </div>
-                ))}
-            </div>
-
-            {selectedTag && (
-              <p className="mt-5 text-[12px] font-medium text-gray-500">
-                当前聚焦标签：<span className="font-black" style={{ color: selectedTag.color }}>{selectedTag.name}</span>
-              </p>
-            )}
           </div>
         </section>
       </div>
@@ -140,22 +140,20 @@ export default function DashboardPage() {
   );
 }
 
-function SummaryCard({
+function MetricTile({
   icon,
   label,
   value,
 }: {
   icon: React.ReactNode;
   label: string;
-  value: React.ReactNode;
+  value: string;
 }) {
   return (
-    <div className="rounded-[28px] border border-[var(--border-color)] bg-white/75 p-5 shadow-[var(--shadow-sm)] dark:bg-white/5">
-      <div className="mb-4 inline-flex rounded-[16px] bg-[var(--primary-light)] p-3 text-[var(--primary-color)]">
-        {icon}
-      </div>
-      <p className="text-[11px] uppercase tracking-[0.22em] text-gray-400 font-black">{label}</p>
-      <div className="mt-2 text-2xl font-black">{value}</div>
+    <div className="rounded-[24px] border border-[var(--border-color)] bg-black/[0.03] px-4 py-4 dark:bg-white/[0.04]">
+      <div className="inline-flex rounded-[14px] bg-[var(--primary-light)] p-2 text-[var(--primary-color)]">{icon}</div>
+      <p className="mt-3 text-[11px] font-black uppercase tracking-[0.16em] text-faint">{label}</p>
+      <p className="mt-1 text-2xl font-black">{value}</p>
     </div>
   );
 }

@@ -69,7 +69,7 @@ export default function AuthPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
-      <div className="w-full max-w-md animate-spring">
+      <div className="w-full max-w-md">
         <div className="glass-modal relative overflow-hidden rounded-[42px] p-8 sm:p-10">
           <div className="absolute right-0 top-0 p-8 opacity-5">
             <Sparkles size={120} className="text-[var(--primary-color)]" />
@@ -80,7 +80,7 @@ export default function AuthPage() {
               <Sparkles size={28} />
             </div>
             <h1 className="text-3xl font-black">{regSuccess ? "查收确认邮件" : mode === "login" ? "欢迎回来" : "创建账号"}</h1>
-            <p className="mt-2 text-[12px] font-bold uppercase tracking-[0.22em] text-gray-400">
+            <p className="mt-2 text-[12px] font-bold uppercase tracking-[0.22em] text-faint">
               {regSuccess ? "check your inbox" : "time lens cloud sync"}
             </p>
           </div>
@@ -122,7 +122,7 @@ export default function AuthPage() {
                 </button>
               </form>
 
-              <div className="my-6 flex items-center gap-3 text-[11px] font-black uppercase tracking-[0.22em] text-gray-400">
+              <div className="my-6 flex items-center gap-3 text-[11px] font-black uppercase tracking-[0.22em] text-faint">
                 <div className="h-px flex-1 bg-[var(--border-color)]" />
                 <span>or</span>
                 <div className="h-px flex-1 bg-[var(--border-color)]" />
@@ -140,7 +140,7 @@ export default function AuthPage() {
               <button
                 type="button"
                 onClick={() => setMode(mode === "login" ? "register" : "login")}
-                className="mt-6 w-full text-center text-sm font-bold text-gray-400"
+                className="mt-6 w-full text-center text-sm font-bold text-faint"
               >
                 {mode === "login" ? "没有账号？去注册" : "已有账号？去登录"}
               </button>
@@ -167,7 +167,7 @@ function Field({
 }) {
   return (
     <div className="relative">
-      <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">{icon}</div>
+      <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-faint">{icon}</div>
       <input
         type={type}
         value={value}

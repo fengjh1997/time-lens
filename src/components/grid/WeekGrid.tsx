@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
-import { AnimatePresence, motion, useDragControls } from "framer-motion";
-import { GripVertical, PlusCircle, Sparkles } from "lucide-react";
+import { useRef, useState } from "react";
+import { AnimatePresence, motion, useDragControls, useMotionValue } from "framer-motion";
+import { PlusCircle } from "lucide-react";
 import ChargingOverlay from "@/components/ui/ChargingOverlay";
 import RecordModal from "./RecordModal";
 import { MiniStarDisplay } from "@/components/ui/StarRating";
@@ -14,13 +14,16 @@ import type { Score, TimeBlock } from "@/types";
 
 const ALL_HOURS = Array.from({ length: 24 }, (_, index) => index);
 const SLEEP_HOURS = [23, 0, 1, 2, 3, 4, 5, 6, 7, 8];
-const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const DAY_NAMES = ["一", "二", "三", "四", "五", "六", "日"];
 
 function getScoreColor(score: Score | undefined, status?: string) {
-  if (status === "planned") return "transparent";
-  if (score === undefined || score === 0) return "var(--score-empty)";
+  if (status === "planned") return "rgba(var(--primary-rgb), 0.08)";
+  if (score === undefined || score === 0) return "transparent";
   if (score === -1) return "var(--score-punish)";
-  return `rgba(var(--primary-rgb), ${Math.max(score, 0.2)})`;
+  if (score === 0.25) return "var(--score-1)";
+  if (score === 0.5) return "var(--score-2)";
+  if (score === 0.75) return "var(--score-3)";
+  return "var(--score-4)";
 }
 
 interface WeekGridProps {
@@ -28,7 +31,7 @@ interface WeekGridProps {
 }
 
 export default function WeekGrid({ weekDates }: WeekGridProps) {
-  const { blocks, saveBlock, deleteBlock, getDayEnergy, getWeekEnergy, settings } = useTimeStore();
+  const { blocks, saveBlock, deleteBlock, getDayEnergy, settings, tags } = useTimeStore();
   const { pushBlock, deleteCloudBlock } = useSync();
   const [selectedCell, setSelectedCell] = useState<{ date: string; hour: number | string } | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -37,78 +40,9 @@ export default function WeekGrid({ weekDates }: WeekGridProps) {
     ? ALL_HOURS.filter((hour) => !SLEEP_HOURS.includes(hour))
     : ALL_HOURS;
 
-  const monthLabel = useMemo(() => {
-    const head = new Date(`${weekDates[0]}T00:00:00`);
-    return `${head.getFullYear()}.${String(head.getMonth() + 1).padStart(2, "0")}`;
-  }, [weekDates]);
-
-  const currentMonthDates = useMemo(() => {
-    const head = new Date(`${weekDates[0]}T00:00:00`);
-    const start = new Date(head.getFullYear(), head.getMonth(), 1);
-    const end = new Date(head.getFullYear(), head.getMonth() + 1, 0);
-    return Array.from({ length: end.getDate() }, (_, index) => {
-      const date = new Date(start);
-      date.setDate(index + 1);
-      return date.toISOString().split("T")[0];
-    });
-  }, [weekDates]);
-
-  const monthEnergy = currentMonthDates.reduce((sum, date) => sum + getDayEnergy(date), 0);
-
-  const handleCellClick = (date: string, hour: number | string) => {
-    setSelectedCell({ date, hour });
-    setIsModalOpen(true);
-  };
-
-  const handleDragUpdate = (date: string, oldHour: number, newHour: number) => {
-    if (oldHour === newHour) return;
-    const oldKey = `${date}-${oldHour}`;
-    const newKey = `${date}-${newHour}`;
-    const block = blocks[oldKey];
-    if (!block) return;
-
-    const nextBlock: TimeBlock = {
-      ...block,
-      id: newKey,
-      hourId: newHour,
-      updatedAt: new Date().toISOString(),
-    };
-
-    deleteBlock(date, block.id);
-    saveBlock(date, nextBlock);
-    deleteCloudBlock(block.id);
-    pushBlock(nextBlock, date);
-  };
-
-  const handleChargeSave = (date: string, hourId: number, score: Score) => {
-    const key = `${date}-${hourId}`;
-    const existing = blocks[key];
-    const nextBlock: TimeBlock = existing
-      ? {
-          ...existing,
-          score,
-          status: "completed",
-          updatedAt: new Date().toISOString(),
-        }
-      : {
-          id: key,
-          hourId,
-          content: "",
-          score,
-          status: "completed",
-          updatedAt: new Date().toISOString(),
-        };
-
-    saveBlock(date, nextBlock);
-    pushBlock(nextBlock, date);
-  };
-
-  const activeBlockKey =
-    selectedCell && typeof selectedCell.hour === "number"
-      ? `${selectedCell.date}-${selectedCell.hour}`
-      : selectedCell
-        ? `${selectedCell.date}-${String(selectedCell.hour)}`
-        : null;
+  const activeBlockKey = selectedCell === null ? null : `${selectedCell.date}-${String(selectedCell.hour)}`;
+  const today = new Date().toISOString().split("T")[0];
+  const currentHour = new Date().getHours();
 
   return (
     <div className="h-full overflow-y-auto bg-[var(--background)] pb-32 sm:pb-10">
@@ -132,109 +66,102 @@ export default function WeekGrid({ weekDates }: WeekGridProps) {
         hourId={selectedCell?.hour}
       />
 
-      <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-5 px-4 py-5 sm:px-6">
-        <section className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
-          <div className="rounded-[32px] border border-[var(--border-color)] bg-white/75 p-5 shadow-[var(--shadow-sm)] dark:bg-white/5">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-[11px] uppercase tracking-[0.3em] text-[var(--primary-color)] font-black">
-                  Week Focus
-                </p>
-                <h2 className="mt-2 text-2xl font-black">
-                  本周 {getWeekEnergy(weekDates).toFixed(settings.decimalPlaces)}
-                </h2>
-                <p className="mt-2 text-sm text-gray-500">月度与年度信息收进页头，不再抢占单独导航。</p>
-              </div>
-              <div className="rounded-[24px] bg-[var(--primary-light)] p-4 text-[var(--primary-color)]">
-                <Sparkles size={24} />
-              </div>
-            </div>
-
-            <div className="mt-5 grid gap-3 sm:grid-cols-3">
-              <StatPill label="周目标" value={`${Math.min(100, Math.round((getWeekEnergy(weekDates) / settings.weeklyEnergyGoal) * 100))}%`} />
-              <StatPill label={monthLabel} value={monthEnergy.toFixed(settings.decimalPlaces)} />
-              <StatPill
-                label="活跃天数"
-                value={`${weekDates.filter((date) => getDayEnergy(date) !== 0).length}/7`}
-              />
-            </div>
-          </div>
-
-          <div className="rounded-[32px] border border-[var(--border-color)] bg-white/75 p-5 shadow-[var(--shadow-sm)] dark:bg-white/5">
-            <p className="text-[11px] uppercase tracking-[0.28em] text-[var(--primary-color)] font-black">
-              Interaction
-            </p>
-            <div className="mt-4 space-y-3 text-sm text-gray-600 dark:text-gray-300">
-              <p>单击格子：打开编辑面板。</p>
-              <p>长按格子：只充能，不再强制弹标签和感悟。</p>
-              <p>拖动手柄：只移动，不与长按冲突。</p>
-            </div>
-          </div>
-        </section>
-
-        <section className="overflow-hidden rounded-[32px] border border-[var(--border-color)] bg-white/70 shadow-[var(--shadow-sm)] dark:bg-white/5">
-          <div className="grid grid-cols-[68px_repeat(7,minmax(120px,1fr))] border-b border-[var(--border-color)]">
-            <div className="border-r border-[var(--border-color)] bg-black/[0.02] dark:bg-white/[0.02]" />
+      <div className="mx-auto w-full max-w-7xl px-2 py-3 sm:px-4 sm:py-4">
+        <section className="overflow-hidden rounded-[30px] border border-[rgba(15,23,42,0.05)] bg-[var(--panel-elevated)] shadow-[0_20px_40px_rgba(15,23,42,0.06)] no-select dark:border-white/[0.06]">
+          <div className="grid grid-cols-[32px_repeat(7,minmax(0,1fr))] border-b border-[rgba(15,23,42,0.05)] sm:grid-cols-[46px_repeat(7,minmax(0,1fr))] dark:border-white/[0.05]">
+            <div />
             {weekDates.map((date, index) => (
               <Link
                 key={date}
                 href={`/day?date=${date}`}
-                className="border-r border-[var(--border-color)] px-3 py-4 last:border-r-0 hover:bg-[var(--primary-light)]/40"
+                className="border-r border-[rgba(15,23,42,0.05)] px-1 py-3 text-center last:border-r-0 dark:border-white/[0.05]"
               >
-                <p className="text-[11px] font-black uppercase tracking-[0.22em] text-gray-400">{DAY_NAMES[index]}</p>
-                <p className="mt-1 text-xl font-black">{date.slice(-2)}</p>
-                <p className="mt-1 text-[12px] font-bold text-[var(--primary-color)]">
-                  {getDayEnergy(date).toFixed(settings.decimalPlaces)}
-                </p>
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-faint">{DAY_NAMES[index]}</p>
+                <p className="mt-1 text-sm font-black sm:text-base">{date.slice(-2)}</p>
+                <div className="mt-1 flex justify-center">
+                  <span
+                    className="h-1.5 w-1.5 rounded-full bg-[rgba(var(--primary-rgb),0.7)]"
+                    style={{ opacity: Math.min(getDayEnergy(date) / 4, 1) || 0.14 }}
+                  />
+                </div>
               </Link>
             ))}
           </div>
 
-          <div className="grid grid-cols-[68px_repeat(7,minmax(120px,1fr))]">
-            <div className="border-r border-[var(--border-color)] bg-black/[0.02] dark:bg-white/[0.02]">
+          <div className="grid grid-cols-[32px_repeat(7,minmax(0,1fr))] sm:grid-cols-[46px_repeat(7,minmax(0,1fr))]">
+            <div className="border-r border-[rgba(15,23,42,0.05)] dark:border-white/[0.05]">
               {visibleHours.map((hour) => (
                 <div
                   key={hour}
-                  className="flex h-[72px] items-start justify-center border-b border-[var(--border-color)] pt-3 text-[12px] font-black text-gray-400 last:border-b-0"
+                  className="flex h-[54px] items-start justify-center border-b border-[rgba(15,23,42,0.04)] pt-2 text-[10px] font-black text-faint sm:h-[68px] sm:pt-3 sm:text-[11px] dark:border-white/[0.04]"
                 >
                   {String(hour).padStart(2, "0")}
                 </div>
               ))}
-              <div className="flex h-[72px] items-center justify-center border-t border-[var(--border-color)] text-[11px] font-black uppercase tracking-[0.22em] text-[var(--primary-color)]">
+              <div className="flex h-[54px] items-center justify-center border-t border-[rgba(15,23,42,0.05)] text-[10px] font-black uppercase tracking-[0.16em] text-[var(--primary-color)] sm:h-[68px] sm:text-[11px] dark:border-white/[0.05]">
                 bonus
               </div>
             </div>
 
             {weekDates.map((date) => (
-              <div key={date} className="border-r border-[var(--border-color)] last:border-r-0">
-                {visibleHours.map((hour) => (
-                  <WeekGridCell
-                    key={`${date}-${hour}`}
-                    date={date}
-                    hour={hour}
-                    block={blocks[`${date}-${hour}`]}
-                    allVisibleHours={visibleHours}
-                    onCellClick={handleCellClick}
-                    onCharge={handleChargeSave}
-                    onDragMove={handleDragUpdate}
-                  />
-                ))}
+              <div key={date} className="border-r border-[rgba(15,23,42,0.05)] last:border-r-0 dark:border-white/[0.05]">
+                {visibleHours.map((hour) => {
+                  const tag = tags.find((item) => item.id === blocks[`${date}-${hour}`]?.tagId);
 
-                <div
-                  onClick={() => handleCellClick(date, "bonus")}
-                  className="flex h-[72px] cursor-pointer items-center justify-center border-t border-[var(--border-color)] bg-[var(--primary-light)]/30 transition-all hover:bg-[var(--primary-light)]/60"
+                  return (
+                    <WeekGridCell
+                      key={`${date}-${hour}`}
+                      hour={hour}
+                      block={blocks[`${date}-${hour}`]}
+                      tagEmoji={tag?.emoji}
+                      isCurrentSlot={date === today && hour === currentHour}
+                      allVisibleHours={visibleHours}
+                      onOpen={() => {
+                        setSelectedCell({ date, hour });
+                        setIsModalOpen(true);
+                      }}
+                      onCharge={(score) => {
+                        const key = `${date}-${hour}`;
+                        const existing = blocks[key];
+                        const nextBlock: TimeBlock = existing
+                          ? { ...existing, score, status: "completed", updatedAt: new Date().toISOString() }
+                          : { id: key, hourId: hour, content: "", score, status: "completed", updatedAt: new Date().toISOString() };
+                        saveBlock(date, nextBlock);
+                        pushBlock(nextBlock, date);
+                      }}
+                      onDragMove={(toHour) => {
+                        const fromKey = `${date}-${hour}`;
+                        const existing = blocks[fromKey];
+                        if (!existing || hour === toHour) return;
+                        const nextBlock: TimeBlock = {
+                          ...existing,
+                          id: `${date}-${toHour}`,
+                          hourId: toHour,
+                          updatedAt: new Date().toISOString(),
+                        };
+                        deleteBlock(date, existing.id);
+                        saveBlock(date, nextBlock);
+                        deleteCloudBlock(existing.id);
+                        pushBlock(nextBlock, date);
+                      }}
+                    />
+                  );
+                })}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedCell({ date, hour: "bonus" });
+                    setIsModalOpen(true);
+                  }}
+                  className="flex h-[54px] w-full items-center justify-center border-t border-[rgba(15,23,42,0.05)] bg-[rgba(var(--primary-rgb),0.08)] sm:h-[68px] dark:border-white/[0.05]"
                 >
                   {blocks[`${date}-bonus`] ? (
-                    <div className="flex flex-col items-center gap-1">
-                      <MiniStarDisplay score={blocks[`${date}-bonus`].score} size={14} />
-                      <span className="max-w-[100px] truncate text-[10px] font-bold text-gray-500">
-                        {blocks[`${date}-bonus`].content || "补充说明"}
-                      </span>
-                    </div>
+                    <MiniStarDisplay score={blocks[`${date}-bonus`].score} size={14} />
                   ) : (
-                    <PlusCircle size={18} className="text-[var(--primary-color)]/50" />
+                    <PlusCircle size={16} className="text-[var(--primary-color)]/66" />
                   )}
-                </div>
+                </button>
               </div>
             ))}
           </div>
@@ -245,125 +172,127 @@ export default function WeekGrid({ weekDates }: WeekGridProps) {
 }
 
 function WeekGridCell({
-  date,
   hour,
   block,
+  tagEmoji,
+  isCurrentSlot,
   allVisibleHours,
-  onCellClick,
+  onOpen,
   onCharge,
   onDragMove,
 }: {
-  date: string;
   hour: number;
   block?: TimeBlock;
+  tagEmoji?: string;
+  isCurrentSlot: boolean;
   allVisibleHours: number[];
-  onCellClick: (date: string, hour: number | string) => void;
-  onCharge: (date: string, hour: number, score: Score) => void;
-  onDragMove: (date: string, fromHour: number, toHour: number) => void;
+  onOpen: () => void;
+  onCharge: (score: Score) => void;
+  onDragMove: (toHour: number) => void;
 }) {
   const dragControls = useDragControls();
-  const suppressClickRef = useRef(false);
-  const { isCharging, chargeProgress, currentChargeScore, startCharging, stopCharging } = useLongPressCharge({
-    onChargeComplete: (score) => {
-      suppressClickRef.current = true;
-      onCharge(date, hour, score);
-    },
-  });
+  const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
+  const dragStartedRef = useRef(false);
+  const rowHeightRef = useRef(56);
+  const dragSnapIndexRef = useRef<number | null>(null);
+  const y = useMotionValue(0);
+  const { isCharging, chargeProgress, currentChargeScore, startCharging, stopCharging, cancelCharging } =
+    useLongPressCharge({ onChargeComplete: (score) => onCharge(score) });
+
+  const isPlanned = block?.status === "planned";
+  const isEmptyBlock = !block || (!block.content?.trim() && !block.tagId && block.score === 0 && block.status !== "planned");
+  const currentIndex = allVisibleHours.indexOf(hour);
 
   return (
-    <motion.div
-      layout
-      drag={!!block}
-      dragListener={false}
-      dragControls={dragControls}
-      dragMomentum={false}
-      dragElastic={0.08}
-      onDragEnd={(_, info) => {
-        if (!block) return;
-        const sourceIndex = allVisibleHours.indexOf(hour);
-        const nextIndex = Math.max(
-          0,
-          Math.min(allVisibleHours.length - 1, sourceIndex + Math.round(info.offset.y / 72)),
-        );
-        if (nextIndex !== sourceIndex) {
-          onDragMove(date, hour, allVisibleHours[nextIndex]);
-        }
-        suppressClickRef.current = true;
-        window.setTimeout(() => {
-          suppressClickRef.current = false;
-        }, 120);
-      }}
-      onPointerDown={(event) => {
-        if (event.button !== 0) return;
-        suppressClickRef.current = false;
-        startCharging();
-      }}
-      onPointerUp={() => {
-        const finalScore = stopCharging();
-        if (finalScore > 0) {
-          suppressClickRef.current = true;
-          window.setTimeout(() => {
-            suppressClickRef.current = false;
-          }, 120);
-        }
-      }}
-      onPointerLeave={() => stopCharging()}
-      onClick={() => {
-        if (suppressClickRef.current) return;
-        onCellClick(date, hour);
-      }}
-      className={`relative flex h-[72px] cursor-pointer items-center border-b border-[var(--border-color)] px-2 py-1 last:border-b-0 ${
-        SLEEP_HOURS.includes(hour) ? "bg-black/[0.02] dark:bg-white/[0.02]" : "bg-transparent"
-      }`}
-      style={block ? { backgroundColor: getScoreColor(block.score, block.status) } : undefined}
-    >
-      <AnimatePresence>
-        {isCharging && (
-          <ChargingOverlay
-            progress={chargeProgress}
-            score={currentChargeScore}
-            isComplete={currentChargeScore === 1}
-          />
+    <div className="flex h-[54px] items-center border-b border-[rgba(15,23,42,0.04)] p-1 sm:h-[68px] sm:p-1.5 dark:border-white/[0.04]">
+      <motion.button
+        type="button"
+        layout
+        drag={!!block}
+        dragListener={false}
+        dragControls={dragControls}
+        dragMomentum={false}
+        dragElastic={0}
+        onPointerDown={(event) => {
+          if (event.button !== 0) return;
+          rowHeightRef.current = event.currentTarget.parentElement?.getBoundingClientRect().height || 56;
+          dragSnapIndexRef.current = currentIndex;
+          pointerStartRef.current = { x: event.clientX, y: event.clientY };
+          dragStartedRef.current = false;
+          startCharging(block?.status === "completed" ? block.score : 0);
+        }}
+        onPointerMove={(event) => {
+          if (!pointerStartRef.current || !block) return;
+          const dx = event.clientX - pointerStartRef.current.x;
+          const dy = event.clientY - pointerStartRef.current.y;
+          if (Math.hypot(dx, dy) > 8 && !dragStartedRef.current) {
+            dragStartedRef.current = true;
+            cancelCharging();
+            dragControls.start(event);
+          }
+        }}
+        onDrag={(_, info) => {
+          const nextIndex = Math.max(
+            0,
+            Math.min(allVisibleHours.length - 1, currentIndex + Math.round(info.offset.y / rowHeightRef.current)),
+          );
+          dragSnapIndexRef.current = nextIndex;
+          y.set((nextIndex - currentIndex) * rowHeightRef.current);
+        }}
+        onPointerUp={() => {
+          pointerStartRef.current = null;
+          if (dragStartedRef.current) return;
+          const finalScore = stopCharging();
+          if (finalScore <= 0) onOpen();
+        }}
+        onPointerLeave={() => {
+          if (dragStartedRef.current) return;
+          pointerStartRef.current = null;
+          cancelCharging();
+        }}
+        onPointerCancel={() => {
+          pointerStartRef.current = null;
+          cancelCharging();
+        }}
+        onDragEnd={() => {
+          if (!block) return;
+          const nextIndex = dragSnapIndexRef.current ?? currentIndex;
+          y.set(0);
+          dragSnapIndexRef.current = null;
+          if (nextIndex !== currentIndex) onDragMove(allVisibleHours[nextIndex]);
+          dragStartedRef.current = false;
+          pointerStartRef.current = null;
+        }}
+        className={`relative flex h-full w-full min-w-0 items-center overflow-hidden rounded-[18px] px-2 py-1.5 text-left no-select select-none [touch-action:none] sm:rounded-[20px] sm:px-2.5 ${
+          isEmptyBlock
+            ? "bg-[#f3f3f1] shadow-none dark:bg-[#1b2027]"
+            : "border border-[rgba(var(--primary-rgb),0.14)] shadow-[0_12px_30px_rgba(15,23,42,0.08)]"
+        } ${isPlanned ? "border border-dashed border-[var(--primary-color)]" : ""} ${isCurrentSlot ? "ring-2 ring-[rgba(var(--primary-rgb),0.34)] ring-offset-1 ring-offset-transparent" : ""}`}
+        style={{
+          y,
+          backgroundColor: isEmptyBlock ? undefined : getScoreColor(block?.score, block?.status),
+          boxShadow: isEmptyBlock
+            ? undefined
+            : isCurrentSlot
+              ? "inset 0 1px 0 rgba(255,255,255,0.22), 0 0 0 1px rgba(var(--primary-rgb),0.18), 0 14px 30px rgba(15,23,42,0.08)"
+              : "inset 0 1px 0 rgba(255,255,255,0.22), 0 14px 30px rgba(15,23,42,0.08)",
+        }}
+      >
+        {isCurrentSlot && isEmptyBlock && <div className="absolute inset-0 bg-[rgba(var(--primary-rgb),0.08)]" />}
+
+        <AnimatePresence>
+          {isCharging && (
+            <ChargingOverlay progress={chargeProgress} score={currentChargeScore} isComplete={chargeProgress >= 0.98} />
+          )}
+        </AnimatePresence>
+
+        {!isEmptyBlock && (
+          <div className="relative z-10 flex w-full items-center justify-between">
+            <MiniStarDisplay score={block?.score ?? 0} size={12} color="currentColor" />
+            <div className="text-[15px] leading-none">{tagEmoji || ""}</div>
+          </div>
         )}
-      </AnimatePresence>
-
-      {block ? (
-        <div className="relative z-10 flex w-full items-center justify-between gap-2">
-          <div className="min-w-0">
-            {block.tagId && <p className="text-[11px] font-black text-[var(--foreground)]">已标记</p>}
-            <p className="truncate text-[10px] font-medium text-[var(--foreground)]/75">
-              {block.content || (block.status === "planned" ? "待补充计划" : "点击补充说明")}
-            </p>
-          </div>
-          <div className="flex items-center gap-1">
-            {block.status === "completed" && block.score !== 0 && <MiniStarDisplay score={block.score} size={12} />}
-            <button
-              type="button"
-              onPointerDown={(event) => {
-                event.stopPropagation();
-                stopCharging();
-                suppressClickRef.current = true;
-                dragControls.start(event);
-              }}
-              className="rounded-full border border-[var(--border-color)] bg-white/80 p-1 text-gray-400 dark:bg-black/20"
-              aria-label="拖动时间块"
-            >
-              <GripVertical size={12} />
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="relative z-10 w-full text-center text-[10px] font-bold text-gray-300">空</div>
-      )}
-    </motion.div>
-  );
-}
-
-function StatPill({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-[22px] border border-[var(--border-color)] bg-black/[0.02] px-4 py-3 dark:bg-white/[0.03]">
-      <p className="text-[11px] font-black uppercase tracking-[0.22em] text-gray-400">{label}</p>
-      <p className="mt-2 text-lg font-black">{value}</p>
+      </motion.button>
     </div>
   );
 }

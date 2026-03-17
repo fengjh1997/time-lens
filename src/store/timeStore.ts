@@ -14,13 +14,13 @@ export const SCORE_ENERGY: Record<Score, number> = {
 const nowIso = () => new Date().toISOString();
 
 export const DEFAULT_TAGS: Tag[] = [
-  { id: "deep-work", name: "深度工作", emoji: "💻", color: "#2563eb", updatedAt: nowIso() },
+  { id: "deep-work", name: "深度工作", emoji: "🧠", color: "#2563eb", updatedAt: nowIso() },
   { id: "study", name: "学习", emoji: "📚", color: "#7c3aed", updatedAt: nowIso() },
   { id: "exercise", name: "运动", emoji: "🏃", color: "#059669", updatedAt: nowIso() },
   { id: "reading", name: "阅读", emoji: "📖", color: "#d97706", updatedAt: nowIso() },
-  { id: "meeting", name: "会议", emoji: "🗂️", color: "#dc2626", updatedAt: nowIso() },
+  { id: "meeting", name: "会议", emoji: "🗓️", color: "#dc2626", updatedAt: nowIso() },
   { id: "creative", name: "创作", emoji: "🎨", color: "#ec4899", updatedAt: nowIso() },
-  { id: "rest", name: "休息", emoji: "🌿", color: "#6b7280", updatedAt: nowIso() },
+  { id: "rest", name: "休息", emoji: "☁️", color: "#6b7280", updatedAt: nowIso() },
   { id: "entertainment", name: "娱乐放松", emoji: "🎮", color: "#f59e0b", updatedAt: nowIso() },
 ];
 
@@ -31,6 +31,7 @@ const DEFAULT_SETTINGS: UserSettings = {
   hideSleepTime: true,
   primaryColor: "emerald",
   cloudSyncEnabled: false,
+  showTagNamesInWeekView: true,
   showDetailsInWeekView: true,
   dailyEnergyGoal: 5,
   weeklyEnergyGoal: 30,
@@ -63,17 +64,11 @@ interface TimeDataStore {
 }
 
 function withBlockTimestamp(block: TimeBlock): TimeBlock {
-  return {
-    ...block,
-    updatedAt: block.updatedAt || nowIso(),
-  };
+  return { ...block, updatedAt: block.updatedAt || nowIso() };
 }
 
 function withTagTimestamp(tag: Tag): Tag {
-  return {
-    ...tag,
-    updatedAt: tag.updatedAt || nowIso(),
-  };
+  return { ...tag, updatedAt: tag.updatedAt || nowIso() };
 }
 
 export const useTimeStore = create<TimeDataStore>()(
@@ -96,6 +91,7 @@ export const useTimeStore = create<TimeDataStore>()(
           const existingBlock = state.blocks[key];
           const oldEnergy = existingBlock?.status === "completed" ? SCORE_ENERGY[existingBlock.score] : 0;
           const newEnergy = newBlock.status === "completed" ? SCORE_ENERGY[newBlock.score] : 0;
+
           return {
             blocks: { ...state.blocks, [key]: newBlock },
             totalEnergy: state.totalEnergy + (newEnergy - oldEnergy),
@@ -108,9 +104,11 @@ export const useTimeStore = create<TimeDataStore>()(
           const key = blockId.startsWith(dateStr) ? blockId : `${dateStr}-${blockId}`;
           const existingBlock = state.blocks[key];
           if (!existingBlock) return state;
+
           const nextBlocks = { ...state.blocks };
           delete nextBlocks[key];
           const oldEnergy = existingBlock.status === "completed" ? SCORE_ENERGY[existingBlock.score] : 0;
+
           return {
             blocks: nextBlocks,
             totalEnergy: state.totalEnergy - oldEnergy,
@@ -119,7 +117,7 @@ export const useTimeStore = create<TimeDataStore>()(
       },
 
       getBlock: (dateStr, hourId) => {
-        const key = typeof hourId === "number" ? `${dateStr}-${hourId}` : hourId;
+        const key = typeof hourId === "number" ? `${dateStr}-${hourId}` : `${dateStr}-${String(hourId)}`;
         return get().blocks[key];
       },
 
@@ -145,9 +143,7 @@ export const useTimeStore = create<TimeDataStore>()(
       removeTag: (id) => set((state) => ({ tags: state.tags.filter((tag) => tag.id !== id) })),
       updateTag: (tag) =>
         set((state) => ({
-          tags: state.tags.map((existing) =>
-            existing.id === tag.id ? withTagTimestamp(tag) : existing,
-          ),
+          tags: state.tags.map((existing) => (existing.id === tag.id ? withTagTimestamp(tag) : existing)),
         })),
 
       updateSettings: (partial) =>
@@ -179,15 +175,9 @@ export const useTimeStore = create<TimeDataStore>()(
           if (!data.blocks) return false;
 
           const nextBlocks = Object.fromEntries(
-            Object.entries(data.blocks as Record<string, TimeBlock>).map(([key, block]) => [
-              key,
-              withBlockTimestamp(block),
-            ]),
+            Object.entries(data.blocks as Record<string, TimeBlock>).map(([key, block]) => [key, withBlockTimestamp(block)]),
           );
-
-          const nextTags = Array.isArray(data.tags)
-            ? (data.tags as Tag[]).map(withTagTimestamp)
-            : DEFAULT_TAGS;
+          const nextTags = Array.isArray(data.tags) ? (data.tags as Tag[]).map(withTagTimestamp) : DEFAULT_TAGS;
 
           set({
             blocks: nextBlocks,
@@ -209,13 +199,7 @@ export const useTimeStore = create<TimeDataStore>()(
         }
       },
 
-      clearAllData: () =>
-        set({
-          blocks: {},
-          totalEnergy: 0,
-          tags: DEFAULT_TAGS,
-          settings: DEFAULT_SETTINGS,
-        }),
+      clearAllData: () => set({ blocks: {}, totalEnergy: 0, tags: DEFAULT_TAGS, settings: DEFAULT_SETTINGS }),
     }),
     {
       name: "time-lens-storage",
@@ -225,7 +209,6 @@ export const useTimeStore = create<TimeDataStore>()(
         state.totalEnergy = Object.values(state.blocks)
           .filter((block) => block.status === "completed")
           .reduce((sum, block) => sum + SCORE_ENERGY[block.score], 0);
-
         state.tags = (state.tags?.length ? state.tags : DEFAULT_TAGS).map(withTagTimestamp);
         state.settings = {
           ...DEFAULT_SETTINGS,

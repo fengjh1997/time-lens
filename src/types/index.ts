@@ -1,13 +1,12 @@
-// Star-based scoring system: -1, 0, 0.25, 0.5, 0.75, 1
 export type Score = -1 | 0 | 0.25 | 0.5 | 0.75 | 1;
 
-export type BlockStatus = 'planned' | 'completed';
+export type BlockStatus = "planned" | "completed";
 
 export interface Tag {
   id: string;
   name: string;
   emoji: string;
-  color: string; // hex or css color
+  color: string;
   updatedAt?: string;
 }
 
@@ -24,15 +23,15 @@ export interface TimeBlock {
   isBonus?: boolean;
 }
 
-export type PrimaryColor = 'amber' | 'emerald' | 'violet' | 'blue';
+export type PrimaryColor = "amber" | "emerald" | "violet" | "blue";
 
 export interface UserSettings {
-  timeGranularity: number; // 60, 30, 25
+  timeGranularity: number;
   decimalPlaces: 0 | 1;
   hideSleepTime: boolean;
-  theme: 'light' | 'dark';
+  theme: "light" | "dark";
   primaryColor: PrimaryColor;
-  showTagNamesInWeekView?: boolean;
+  showTagNamesInWeekView: boolean;
   cloudSyncEnabled?: boolean;
   showDetailsInWeekView: boolean;
   dailyEnergyGoal: number;
@@ -41,6 +40,6 @@ export interface UserSettings {
 }
 
 export interface DayData {
-  date: string; // YYYY-MM-DD
-  blocks: Record<string, TimeBlock>; // Keyed by block ID
+  date: string;
+  blocks: Record<string, TimeBlock>;
 }

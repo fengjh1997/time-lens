@@ -15,20 +15,17 @@ const views: Array<{ id: TimeView; label: string }> = [
 ];
 
 export default function ViewSwitcher({ currentView, onViewChange }: ViewSwitcherProps) {
-  const activeIndex = Math.max(
-    0,
-    views.findIndex((view) => view.id === currentView),
-  );
+  const activeIndex = Math.max(0, views.findIndex((view) => view.id === currentView));
 
   return (
-    <div className="relative flex rounded-full bg-black/[0.05] p-1 dark:bg-white/10">
+    <div className="glass-card relative flex rounded-full p-1 no-select">
       {views.map((view) => (
         <button
           key={view.id}
           type="button"
           onClick={() => onViewChange(view.id)}
           className={`relative z-10 w-16 rounded-full px-4 py-2 text-[13px] font-black transition-all ${
-            currentView === view.id ? "text-[var(--primary-color)]" : "text-gray-400"
+            currentView === view.id ? "text-[var(--primary-color)]" : "text-faint"
           }`}
         >
           {view.label}
@@ -36,10 +33,10 @@ export default function ViewSwitcher({ currentView, onViewChange }: ViewSwitcher
       ))}
 
       <motion.div
-        layoutId="activeView"
-        className="absolute inset-y-1 rounded-full bg-white shadow-sm dark:bg-white/10"
+        layoutId="active-view"
+        className="absolute inset-y-1 rounded-full bg-white/85 shadow-sm dark:bg-white/[0.08]"
         animate={{ left: activeIndex * 64 + 4, width: 56 }}
-        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+        transition={{ type: "spring", stiffness: 500, damping: 34 }}
       />
     </div>
   );

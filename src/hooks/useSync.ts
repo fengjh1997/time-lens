@@ -29,6 +29,7 @@ function buildExtendedSettingsPayload(
   return {
     ...buildBasicSettingsPayload(settings, userId),
     show_details_in_week_view: settings.showDetailsInWeekView,
+    show_tag_names_in_week_view: settings.showTagNamesInWeekView,
     daily_energy_goal: settings.dailyEnergyGoal,
     weekly_energy_goal: settings.weeklyEnergyGoal,
     tags_json: tags,
@@ -90,11 +91,9 @@ export function useSync() {
     const pullData = async () => {
       isSyncingFromCloud.current = true;
       setSyncStatus(true);
+
       try {
-        const { data: cloudBlocks } = await supabase
-          .from("blocks")
-          .select("*")
-          .eq("user_id", user.id);
+        const { data: cloudBlocks } = await supabase.from("blocks").select("*").eq("user_id", user.id);
 
         if (cloudBlocks) {
           for (const cloudBlock of cloudBlocks) {
@@ -135,11 +134,7 @@ export function useSync() {
           }
         }
 
-        const { data: cloudSettings } = await supabase
-          .from("settings")
-          .select("*")
-          .eq("user_id", user.id)
-          .maybeSingle();
+        const { data: cloudSettings } = await supabase.from("settings").select("*").eq("user_id", user.id).maybeSingle();
 
         if (cloudSettings) {
           const cloudUpdatedAt = asIso(cloudSettings.updated_at);
@@ -153,6 +148,8 @@ export function useSync() {
               decimalPlaces: cloudSettings.decimal_places ?? latestSettingsRef.current.decimalPlaces,
               showDetailsInWeekView:
                 cloudSettings.show_details_in_week_view ?? latestSettingsRef.current.showDetailsInWeekView,
+              showTagNamesInWeekView:
+                cloudSettings.show_tag_names_in_week_view ?? latestSettingsRef.current.showTagNamesInWeekView,
               dailyEnergyGoal: cloudSettings.daily_energy_goal ?? latestSettingsRef.current.dailyEnergyGoal,
               weeklyEnergyGoal: cloudSettings.weekly_energy_goal ?? latestSettingsRef.current.weeklyEnergyGoal,
               updatedAt: cloudUpdatedAt,
@@ -161,9 +158,11 @@ export function useSync() {
             if (Array.isArray(cloudSettings.tags_json)) {
               const cloudTags = cloudSettings.tags_json as Tag[];
               const store = useTimeStore.getState();
+
               store.tags
                 .filter((tag) => !cloudTags.some((cloudTag) => cloudTag.id === tag.id))
                 .forEach((localOnlyTag) => store.removeTag(localOnlyTag.id));
+
               cloudTags.forEach((tag) => {
                 if (store.tags.some((existing) => existing.id === tag.id)) {
                   store.updateTag(tag);
@@ -189,18 +188,12 @@ export function useSync() {
     };
 
     pullData();
-  }, [
-    saveBlock,
-    settings.cloudSyncEnabled,
-    updateSettings,
-    user,
-    setLastSyncedAt,
-    setSyncStatus,
-  ]);
+  }, [saveBlock, settings.cloudSyncEnabled, updateSettings, user, setLastSyncedAt, setSyncStatus]);
 
   const manualSync = useCallback(async () => {
     if (!user) return;
     setSyncStatus(true);
+
     try {
       await upsertSettingsWithFallback(settings, tags, user.id);
 
