@@ -1,72 +1,72 @@
-# Time Lens - Changelog
+# Time Lens - 更新日志
 
 ## v6.8.0 (2026-03-17)
 
-### UI/UX restructure
-- Rebuilt the product around day/week operational canvases instead of a sidebar-led navigation model.
-- Added a unified desktop dock and refreshed mobile navigation to match the new structure.
-- Moved monthly and yearly context into day/week summary areas so panorama data supports execution rather than competing with it.
+### UI/UX 重构
+- 以前的侧边栏中心化结构被弱化，产品主结构重建为“顶部导航 + 周/日主画布”。
+- 新增统一桌面导航 Dock，并同步整理移动端导航结构。
+- 月度与年度信息不再单独抢主入口，而是嵌入周/日页头摘要区，作为全景支持层。
 
-### Interaction improvements
-- Split time block gestures into three clear paths: tap to edit, long-press to charge, drag handle to move.
-- Replaced long-press text overlays with icon-based charging feedback.
-- Stopped long-press from forcing tag selection or reflection entry.
-- Removed default reflection filler text and reduced reflection text emphasis under tag labels.
-- Replaced the broken pomodoro placeholder rendering with clean icon-based counting.
+### 交互体验优化
+- 时间块手势彻底拆分为三条路径：`单击编辑`、`长按充能`、`拖拽手柄移动`。
+- 长按充能反馈从文字改为图标与进度环，不再显示生硬提示文字。
+- 长按充能不再强制弹出标签选择或感悟输入。
+- 去掉默认感悟填充文案，降低感悟文本视觉层级，避免压过标签信息。
+- 修复番茄数量的异常占位显示，改为正常图标计数。
 
-### Sync and state stability
-- Added timestamp-based merge logic for settings and block sync to reduce overwrite conflicts after login or page navigation.
-- Synced theme preferences and tag color changes through a unified settings pipeline.
-- Extended Supabase settings support for `tags_json`, weekly detail preferences, and energy goals.
+### 同步与状态稳定性
+- 为区块和设置同步加入基于 `updatedAt` 的时间戳合并策略，降低登录后或切页后的覆盖冲突。
+- 主题色、标签颜色和设置项走统一同步通道。
+- 扩展 Supabase `settings` 同步能力，支持 `tags_json`、周视图细节显示和日/周目标字段。
 
-### Documentation and release maintenance
-- Updated `README.md` to match the current product direction and technical workflow.
-- Rewrote `CHANGELOG.md` into a clean release history format.
-- Bumped project version metadata to `v6.8.0`.
+### 文档与版本维护
+- `README.md` 改写为与当前产品结构一致的中文说明。
+- `CHANGELOG.md` 统一重写为清晰的中文版本历史格式。
+- 项目版本号提升为 `v6.8.0`。
 
 ## v6.7.0
 
-### Planning and energy goals
-- Introduced smoother day/week view switching.
-- Added stronger energy-goal presentation and interaction fixes across the main planning surfaces.
+### 规划与目标增强
+- 优化周/日视图切换体验。
+- 强化能量目标展示与部分主界面交互细节。
 
 ## v6.6.0
 
-### Time block interaction baseline
-- Added long-press charging.
-- Added drag-to-move for time blocks.
-- Shifted the default visual emphasis toward the emerald theme direction.
+### 时间块交互基线
+- 引入长按充能。
+- 引入时间块拖拽移动。
+- 默认视觉方向进一步向绿色能量主题靠拢。
 
 ## v6.5.1 (2026-03-16)
 
-### PWA and storage
-- Added PWA conversion work for mobile installation and offline behavior.
-- Strengthened local-first storage behavior and controlled cloud sync entry points.
-- Expanded documentation and project maintenance standards.
+### PWA 与存储优化
+- 推进 PWA 化改造，增强移动端安装与离线使用体验。
+- 强化本地优先存储逻辑，并将云同步入口调整为更可控的模式。
+- 补充并完善项目开发标准与文档体系。
 
 ## v6.2.0 (2026-03-14)
 
-### Interaction refinement
-- Reworked the record modal flow and simplified current-hour pomodoro behavior.
-- Added stronger current-time highlighting in day and week views.
-- Expanded dashboard analytics and heatmap-based visualization.
+### 交互细化
+- 重构记录弹窗流程，并简化当前时段番茄钟的展示逻辑。
+- 增强日视图、周视图中的当前时间高亮表现。
+- 扩展 Dashboard 的数据热力图和分析展示。
 
 ## v6.1.2 (2026-03-14)
 
-### Documentation normalization
-- Added and organized development standards documentation.
-- Standardized root-level documentation layout.
+### 文档规范化
+- 新增并整理开发标准文档。
+- 统一根目录文档布局。
 
 ## v6.1.0 (2026-03-14)
 
-### Theme and cloud-sync foundation
-- Introduced unified theme-color linkage across rating, week cells, and major UI surfaces.
-- Integrated the Supabase foundation for future multi-device sync.
-- Fixed several dark-mode and visual consistency issues.
+### 主题与云同步基础设施
+- 打通评分、周视图单元格与主要界面的主题色联动。
+- 接入 Supabase 基础能力，为后续多端同步打底。
+- 修复多处暗色模式和视觉一致性问题。
 
 ## v6.0.0 (2026-03-14)
 
-### V6 baseline
-- Added dynamic theme support.
-- Added integrated pomodoro behavior in the record modal.
-- Folded sleep hours by default to improve focus density.
+### V6 基线版本
+- 引入动态主题系统。
+- 在记录弹窗中加入集成式番茄钟能力。
+- 默认折叠睡眠时间段，提高主画布信息密度。
