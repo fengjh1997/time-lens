@@ -8,6 +8,7 @@ export interface Tag {
   name: string;
   emoji: string;
   color: string; // hex or css color
+  updatedAt?: string;
 }
 
 export interface TimeBlock {
@@ -36,6 +37,7 @@ export interface UserSettings {
   showDetailsInWeekView: boolean;
   dailyEnergyGoal: number;
   weeklyEnergyGoal: number;
+  updatedAt?: string;
 }
 
 export interface DayData {

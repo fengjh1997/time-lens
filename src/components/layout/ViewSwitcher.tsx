@@ -2,44 +2,43 @@
 
 import { motion } from "framer-motion";
 
-export type TimeView = 'day' | 'week' | 'month' | 'year';
+export type TimeView = "day" | "week" | "month" | "year";
 
 interface ViewSwitcherProps {
   currentView: TimeView;
   onViewChange: (view: TimeView) => void;
 }
 
+const views: Array<{ id: TimeView; label: string }> = [
+  { id: "day", label: "日" },
+  { id: "week", label: "周" },
+];
+
 export default function ViewSwitcher({ currentView, onViewChange }: ViewSwitcherProps) {
-  const views: { id: TimeView; label: string }[] = [
-    { id: 'day', label: '日' },
-    { id: 'week', label: '周' },
-    { id: 'month', label: '月' },
-    { id: 'year', label: '年' }
-  ];
+  const activeIndex = Math.max(
+    0,
+    views.findIndex((view) => view.id === currentView),
+  );
 
   return (
-    <div className="flex bg-black/[0.05] dark:bg-white/10 p-1 rounded-[20px] relative">
+    <div className="relative flex rounded-full bg-black/[0.05] p-1 dark:bg-white/10">
       {views.map((view) => (
         <button
           key={view.id}
+          type="button"
           onClick={() => onViewChange(view.id)}
-          className={`relative z-10 px-6 py-2 text-[13px] font-black transition-all duration-300 w-16
-            ${currentView === view.id ? 'text-[var(--primary-color)]' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'}
-          `}
+          className={`relative z-10 w-16 rounded-full px-4 py-2 text-[13px] font-black transition-all ${
+            currentView === view.id ? "text-[var(--primary-color)]" : "text-gray-400"
+          }`}
         >
           {view.label}
         </button>
       ))}
-      
-      {/* Active Indicator */}
+
       <motion.div
         layoutId="activeView"
-        className="absolute inset-y-1 bg-white dark:bg-white/10 rounded-[16px] shadow-sm z-0"
-        initial={false}
-        animate={{
-          left: views.findIndex(v => v.id === currentView) * 64 + 4,
-          width: 64 - 8
-        }}
+        className="absolute inset-y-1 rounded-full bg-white shadow-sm dark:bg-white/10"
+        animate={{ left: activeIndex * 64 + 4, width: 56 }}
         transition={{ type: "spring", stiffness: 500, damping: 30 }}
       />
     </div>

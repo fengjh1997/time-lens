@@ -1,363 +1,369 @@
 "use client";
 
-import { useState } from "react";
-import { ChevronLeft, ChevronRight, Calendar, Star as StarIcon } from "lucide-react";
-import { type Score, type TimeBlock } from "@/types";
-import { useTimeStore } from "@/store/timeStore";
-import { MiniStarDisplay } from "@/components/ui/StarRating";
-import RecordModal from "./RecordModal";
 import Link from "next/link";
-import { PlusCircle } from "lucide-react";
-import { useSync } from "@/hooks/useSync";
-import { useLongPressCharge } from "@/hooks/useLongPressCharge";
+import { useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion, useDragControls } from "framer-motion";
+import { GripVertical, PlusCircle, Sparkles } from "lucide-react";
 import ChargingOverlay from "@/components/ui/ChargingOverlay";
-import { motion, AnimatePresence } from "framer-motion";
+import RecordModal from "./RecordModal";
+import { MiniStarDisplay } from "@/components/ui/StarRating";
+import { useLongPressCharge } from "@/hooks/useLongPressCharge";
+import { useSync } from "@/hooks/useSync";
+import { useTimeStore } from "@/store/timeStore";
+import type { Score, TimeBlock } from "@/types";
+
+const ALL_HOURS = Array.from({ length: 24 }, (_, index) => index);
+const SLEEP_HOURS = [23, 0, 1, 2, 3, 4, 5, 6, 7, 8];
+const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 function getScoreColor(score: Score | undefined, status?: string) {
-  if (status === 'planned') return 'transparent';
+  if (status === "planned") return "transparent";
   if (score === undefined || score === 0) return "var(--score-empty)";
   if (score === -1) return "var(--score-punish)";
-  
-  // Dynamic opacity based on score for the primary color
-  const opacity = score; // 0.25, 0.5, 0.75, 1
-  return `rgba(var(--primary-rgb), ${opacity})`;
+  return `rgba(var(--primary-rgb), ${Math.max(score, 0.2)})`;
 }
-
-const ALL_HOURS = Array.from({ length: 24 }, (_, i) => i);
-const SLEEP_HOURS = [23, 0, 1, 2, 3, 4, 5, 6, 7, 8];
-const DAYS_SHORT = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
 
 interface WeekGridProps {
   weekDates: string[];
 }
 
 export default function WeekGrid({ weekDates }: WeekGridProps) {
-  const { blocks, saveBlock, deleteBlock, getBlock, getDayEnergy, getWeekEnergy, settings } = useTimeStore();
+  const { blocks, saveBlock, deleteBlock, getDayEnergy, getWeekEnergy, settings } = useTimeStore();
   const { pushBlock, deleteCloudBlock } = useSync();
-  const [selectedCell, setSelectedCell] = useState<{date: string, hour: number | string} | null>(null);
+  const [selectedCell, setSelectedCell] = useState<{ date: string; hour: number | string } | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const visibleHours = settings.hideSleepTime
+    ? ALL_HOURS.filter((hour) => !SLEEP_HOURS.includes(hour))
+    : ALL_HOURS;
+
+  const monthLabel = useMemo(() => {
+    const head = new Date(`${weekDates[0]}T00:00:00`);
+    return `${head.getFullYear()}.${String(head.getMonth() + 1).padStart(2, "0")}`;
+  }, [weekDates]);
+
+  const currentMonthDates = useMemo(() => {
+    const head = new Date(`${weekDates[0]}T00:00:00`);
+    const start = new Date(head.getFullYear(), head.getMonth(), 1);
+    const end = new Date(head.getFullYear(), head.getMonth() + 1, 0);
+    return Array.from({ length: end.getDate() }, (_, index) => {
+      const date = new Date(start);
+      date.setDate(index + 1);
+      return date.toISOString().split("T")[0];
+    });
+  }, [weekDates]);
+
+  const monthEnergy = currentMonthDates.reduce((sum, date) => sum + getDayEnergy(date), 0);
 
   const handleCellClick = (date: string, hour: number | string) => {
     setSelectedCell({ date, hour });
     setIsModalOpen(true);
   };
 
-  const handleDragUpdate = (date: string, oldHour: number | string, newHour: number | string) => {
+  const handleDragUpdate = (date: string, oldHour: number, newHour: number) => {
     if (oldHour === newHour) return;
-    const oldKey = typeof oldHour === 'number' ? `${date}-${oldHour}` : oldHour;
-    const newKey = typeof newHour === 'number' ? `${date}-${newHour}` : newHour;
-    
+    const oldKey = `${date}-${oldHour}`;
+    const newKey = `${date}-${newHour}`;
     const block = blocks[oldKey];
     if (!block) return;
 
-    const updatedBlock: TimeBlock = { ...block, hourId: newHour, id: newKey, updatedAt: new Date().toISOString() };
+    const nextBlock: TimeBlock = {
+      ...block,
+      id: newKey,
+      hourId: newHour,
+      updatedAt: new Date().toISOString(),
+    };
+
     deleteBlock(date, block.id);
-    saveBlock(date, updatedBlock);
-    
+    saveBlock(date, nextBlock);
     deleteCloudBlock(block.id);
-    pushBlock(updatedBlock, date);
+    pushBlock(nextBlock, date);
   };
 
-  const handleChargeSave = (date: string, hourId: number | string, score: Score) => {
-    const key = typeof hourId === 'number' ? `${date}-${hourId}` : hourId;
+  const handleChargeSave = (date: string, hourId: number, score: Score) => {
+    const key = `${date}-${hourId}`;
     const existing = blocks[key];
-    
-    const newBlock: TimeBlock = existing 
-      ? { ...existing, score, status: 'completed', updatedAt: new Date().toISOString() }
+    const nextBlock: TimeBlock = existing
+      ? {
+          ...existing,
+          score,
+          status: "completed",
+          updatedAt: new Date().toISOString(),
+        }
       : {
           id: key,
-          hourId: hourId,
-          content: "持续专注",
+          hourId,
+          content: "",
           score,
-          status: 'completed',
-          updatedAt: new Date().toISOString()
+          status: "completed",
+          updatedAt: new Date().toISOString(),
         };
-    
-    saveBlock(date, newBlock);
-    pushBlock(newBlock, date);
+
+    saveBlock(date, nextBlock);
+    pushBlock(nextBlock, date);
   };
 
-  const handleSaveBlock = (block: TimeBlock) => {
-    if (selectedCell) {
-      saveBlock(selectedCell.date, block);
-      pushBlock(block, selectedCell.date);
-    }
-  };
-
-  const handleDeleteBlock = (id: string) => {
-    if (selectedCell) {
-      deleteBlock(selectedCell.date, id);
-      deleteCloudBlock(id);
-      setIsModalOpen(false);
-    }
-  };
-
-  const activeBlockKey = selectedCell ? (typeof selectedCell.hour === 'number' ? `${selectedCell.date}-${selectedCell.hour}` : `${selectedCell.date}-${selectedCell.hour}`) : null;
-  const activeBlock = activeBlockKey ? blocks[activeBlockKey] : null;
-
-  const visibleHours = settings.hideSleepTime 
-    ? ALL_HOURS.filter(h => !SLEEP_HOURS.includes(h))
-    : ALL_HOURS;
+  const activeBlockKey =
+    selectedCell && typeof selectedCell.hour === "number"
+      ? `${selectedCell.date}-${selectedCell.hour}`
+      : selectedCell
+        ? `${selectedCell.date}-${String(selectedCell.hour)}`
+        : null;
 
   return (
-    <div className="w-full flex flex-col h-full bg-[var(--background)] relative">
-      <RecordModal 
-        isOpen={isModalOpen} 
+    <div className="h-full overflow-y-auto bg-[var(--background)] pb-32 sm:pb-10">
+      <RecordModal
+        isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSave={handleSaveBlock}
-        onDelete={handleDeleteBlock}
-        initialData={activeBlock}
+        onSave={(block) => {
+          if (!selectedCell) return;
+          saveBlock(selectedCell.date, block);
+          pushBlock(block, selectedCell.date);
+        }}
+        onDelete={(id) => {
+          if (!selectedCell) return;
+          deleteBlock(selectedCell.date, id);
+          deleteCloudBlock(id);
+          setIsModalOpen(false);
+        }}
+        initialData={activeBlockKey ? blocks[activeBlockKey] : null}
         dateStr={selectedCell?.date}
-        hourIdx={typeof selectedCell?.hour === 'number' ? selectedCell.hour : 0}
+        hourIdx={typeof selectedCell?.hour === "number" ? selectedCell.hour : 0}
         hourId={selectedCell?.hour}
       />
 
-      {/* Day Headers */}
-      <div className="flex flex-col border-b border-[var(--border-color)] sticky top-0 bg-[var(--background)]/80 backdrop-blur-md z-10 shadow-sm">
-        <div className="flex items-center px-4 py-2 bg-[var(--primary-light)]/30">
-          <div className="flex-1 flex items-center gap-4">
-             <div className="flex items-center gap-2">
-                <StarIcon className="text-[var(--primary-color)] animate-pulse" size={14} />
-                <span className="text-[10px] font-black tracking-widest uppercase text-[var(--primary-color)]">本周能量进度 {Math.round((getWeekEnergy(weekDates) / settings.weeklyEnergyGoal) * 100)}%</span>
-             </div>
-             <div className="flex-1 h-1.5 bg-black/5 dark:bg-white/10 rounded-full overflow-hidden max-w-[200px]">
-                <motion.div 
-                  initial={{ width: 0 }}
-                  animate={{ width: `${Math.min((getWeekEnergy(weekDates) / settings.weeklyEnergyGoal) * 100, 100)}%` }}
-                  className="h-full bg-[var(--primary-color)] shadow-[0_0_8px_var(--primary-glow)]"
-                />
-             </div>
-          </div>
-          <div className="text-[10px] font-black opacity-40 uppercase tracking-widest">目标: {settings.weeklyEnergyGoal}★</div>
-        </div>
-
-        <div className="flex">
-          <div className="w-14 sm:w-16 shrink-0 border-r border-[var(--border-color)] flex items-center justify-center bg-[var(--hover-bg)]">
-          </div>
-          <div className="flex-1 grid grid-cols-7">
-            {weekDates.map((date, idx) => {
-              const dayEnergy = getDayEnergy(date);
-              const dStr = date.split('-')[2];
-              const isWeekend = idx >= 5;
-              return (
-                <Link 
-                  key={date} 
-                  href={`/day?date=${date}`}
-                  className={`py-3 sm:py-4 text-center border-r border-[var(--border-color)] last:border-r-0 hover:bg-[var(--primary-light)] transition-all cursor-pointer ${isWeekend ? 'bg-[var(--primary-color)]/[0.03] dark:bg-[var(--primary-color)]/[0.05]' : ''}`}
-                >
-                  <div className="text-[10px] sm:text-[11px] font-black text-gray-400 tracking-widest uppercase">{DAYS_SHORT[idx]}</div>
-                  <div className="text-base sm:text-xl font-black mt-1 text-[var(--foreground)]">{dStr}</div>
-                  {dayEnergy !== 0 && (
-                    <div className={`text-[10px] font-black mt-1 ${dayEnergy > 0 ? 'text-[var(--primary-color)]' : 'text-red-400'}`}>
-                      {dayEnergy > 0 ? '+' : ''}{dayEnergy.toFixed(1)}★
-                    </div>
-                  )}
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* Grid Body */}
-      <div className="flex-1 overflow-y-auto min-h-0 relative custom-scrollbar">
-        <div className="flex absolute min-w-full">
-          {/* Time axis */}
-          <div className="w-14 sm:w-16 shrink-0 border-r border-[var(--border-color)] bg-[var(--background)] relative z-10">
-            {visibleHours.map(hour => (
-              <div key={hour} className={`h-14 sm:h-16 flex items-start justify-center pt-2 relative ${SLEEP_HOURS.includes(hour) ? 'sleep-hour-bg' : ''}`}>
-                <span className="text-[10px] sm:text-[11px] font-mono text-gray-400 font-bold -translate-y-1/2 px-1 relative z-20">
-                  {hour.toString().padStart(2, '0')}:00
-                </span>
+      <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-5 px-4 py-5 sm:px-6">
+        <section className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+          <div className="rounded-[32px] border border-[var(--border-color)] bg-white/75 p-5 shadow-[var(--shadow-sm)] dark:bg-white/5">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.3em] text-[var(--primary-color)] font-black">
+                  Week Focus
+                </p>
+                <h2 className="mt-2 text-2xl font-black">
+                  本周 {getWeekEnergy(weekDates).toFixed(settings.decimalPlaces)}
+                </h2>
+                <p className="mt-2 text-sm text-gray-500">月度与年度信息收进页头，不再抢占单独导航。</p>
               </div>
-            ))}
-            {/* Bonus row header */}
-            <div className="h-14 sm:h-16 flex items-center justify-center bg-[var(--primary-light)] border-t border-[var(--border-color)]">
-              <span className="text-[9px] font-black text-[var(--primary-color)] vertical-text leading-none tracking-widest">BONUS</span>
+              <div className="rounded-[24px] bg-[var(--primary-light)] p-4 text-[var(--primary-color)]">
+                <Sparkles size={24} />
+              </div>
+            </div>
+
+            <div className="mt-5 grid gap-3 sm:grid-cols-3">
+              <StatPill label="周目标" value={`${Math.min(100, Math.round((getWeekEnergy(weekDates) / settings.weeklyEnergyGoal) * 100))}%`} />
+              <StatPill label={monthLabel} value={monthEnergy.toFixed(settings.decimalPlaces)} />
+              <StatPill
+                label="活跃天数"
+                value={`${weekDates.filter((date) => getDayEnergy(date) !== 0).length}/7`}
+              />
             </div>
           </div>
 
-          {/* Grid Cells */}
-          <div className="flex-1 grid grid-cols-7 bg-[var(--border-color)] gap-[1px]">
-            {weekDates.map((dateStr, dayIdx) => (
-              <div key={dayIdx} className={`flex flex-col bg-[var(--background)] ${dayIdx >= 5 ? 'bg-[var(--primary-color)]/[0.015] dark:bg-[var(--primary-color)]/[0.03]' : ''}`}>
-                {visibleHours.map(hourIdx => {
-                  const key = `${dateStr}-${hourIdx}`;
-                  const block = blocks[key];
-                  const isPlanned = block?.status === 'planned';
-                  const isCompleted = block?.status === 'completed';
-                  const isSleep = SLEEP_HOURS.includes(hourIdx);
-                  const isPrimaryTheme = isCompleted && block.score !== 0 && block.score !== -1;
-                  
-                  const now = new Date();
-                  const isCurrentHourCell = dateStr === now.toISOString().split('T')[0] && hourIdx === now.getHours();
+          <div className="rounded-[32px] border border-[var(--border-color)] bg-white/75 p-5 shadow-[var(--shadow-sm)] dark:bg-white/5">
+            <p className="text-[11px] uppercase tracking-[0.28em] text-[var(--primary-color)] font-black">
+              Interaction
+            </p>
+            <div className="mt-4 space-y-3 text-sm text-gray-600 dark:text-gray-300">
+              <p>单击格子：打开编辑面板。</p>
+              <p>长按格子：只充能，不再强制弹标签和感悟。</p>
+              <p>拖动手柄：只移动，不与长按冲突。</p>
+            </div>
+          </div>
+        </section>
 
-                  return (
-                    <WeekGridCell 
-                      key={hourIdx}
-                      dateStr={dateStr}
-                      hourIdx={hourIdx}
-                      block={block}
-                      isSleep={isSleep}
-                      isCurrentHourCell={isCurrentHourCell}
-                      onCellClick={handleCellClick}
-                      onCharge={handleChargeSave}
-                      onDragMove={handleDragUpdate}
-                      settings={settings}
-                      allVisibleHours={visibleHours}
-                    />
-                  );
-                })}
+        <section className="overflow-hidden rounded-[32px] border border-[var(--border-color)] bg-white/70 shadow-[var(--shadow-sm)] dark:bg-white/5">
+          <div className="grid grid-cols-[68px_repeat(7,minmax(120px,1fr))] border-b border-[var(--border-color)]">
+            <div className="border-r border-[var(--border-color)] bg-black/[0.02] dark:bg-white/[0.02]" />
+            {weekDates.map((date, index) => (
+              <Link
+                key={date}
+                href={`/day?date=${date}`}
+                className="border-r border-[var(--border-color)] px-3 py-4 last:border-r-0 hover:bg-[var(--primary-light)]/40"
+              >
+                <p className="text-[11px] font-black uppercase tracking-[0.22em] text-gray-400">{DAY_NAMES[index]}</p>
+                <p className="mt-1 text-xl font-black">{date.slice(-2)}</p>
+                <p className="mt-1 text-[12px] font-bold text-[var(--primary-color)]">
+                  {getDayEnergy(date).toFixed(settings.decimalPlaces)}
+                </p>
+              </Link>
+            ))}
+          </div>
 
-                {/* Bonus Cell */}
-                <div 
-                  onClick={() => handleCellClick(dateStr, 'bonus')}
-                  className="h-14 sm:h-16 relative group cursor-pointer p-[2px] sm:p-[3px] bg-[var(--primary-light)] border-t border-[var(--border-color)]"
+          <div className="grid grid-cols-[68px_repeat(7,minmax(120px,1fr))]">
+            <div className="border-r border-[var(--border-color)] bg-black/[0.02] dark:bg-white/[0.02]">
+              {visibleHours.map((hour) => (
+                <div
+                  key={hour}
+                  className="flex h-[72px] items-start justify-center border-b border-[var(--border-color)] pt-3 text-[12px] font-black text-gray-400 last:border-b-0"
                 >
-                  {(() => {
-                    const block = blocks[`${dateStr}-bonus`];
-                    const isPlanned = block?.status === 'planned';
-                    const isCompleted = block?.status === 'completed';
-                    const isPrimaryTheme = isCompleted && block.score !== 0 && block.score !== -1;
-                    return (
-                      <div className={`w-full h-full rounded-[14px] bg-[var(--primary-color)]/5 hover:bg-[var(--primary-color)]/20 border border-[var(--primary-color)]/20 border-dashed flex items-center justify-center transition-all group-hover:scale-[1.03]`}>
-                        {block ? (
-                           <div className="flex flex-col items-center gap-0.5 px-1">
-                             {isCompleted && block.score !== 0 && (
-                               <div className="flex items-center justify-center">
-                                 <MiniStarDisplay score={block.score} size={11} color={isPrimaryTheme ? 'white' : undefined} />
-                               </div>
-                             )}
-                             {(settings.showDetailsInWeekView || isPlanned) && (
-                               <span className={`text-[9px] font-black truncate w-full text-center px-1
-                                 ${isPlanned ? 'text-[var(--primary-color)]' : isPrimaryTheme ? 'text-white/90' : 'text-[var(--foreground)] opacity-70'}
-                               `}>
-                                 {block.content}
-                               </span>
-                             )}
-                             {!settings.showDetailsInWeekView && block.score === 0 && !isPlanned && (
-                               <div className="w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-gray-700 opacity-20" />
-                             )}
-                           </div>
-                        ) : (
-                          <PlusCircle size={18} className="text-[var(--primary-color)]/40 group-hover:text-[var(--primary-color)] transition-all group-hover:rotate-90" />
-                        )}
-                      </div>
-                    )
-                  })()}
+                  {String(hour).padStart(2, "0")}
+                </div>
+              ))}
+              <div className="flex h-[72px] items-center justify-center border-t border-[var(--border-color)] text-[11px] font-black uppercase tracking-[0.22em] text-[var(--primary-color)]">
+                bonus
+              </div>
+            </div>
+
+            {weekDates.map((date) => (
+              <div key={date} className="border-r border-[var(--border-color)] last:border-r-0">
+                {visibleHours.map((hour) => (
+                  <WeekGridCell
+                    key={`${date}-${hour}`}
+                    date={date}
+                    hour={hour}
+                    block={blocks[`${date}-${hour}`]}
+                    allVisibleHours={visibleHours}
+                    onCellClick={handleCellClick}
+                    onCharge={handleChargeSave}
+                    onDragMove={handleDragUpdate}
+                  />
+                ))}
+
+                <div
+                  onClick={() => handleCellClick(date, "bonus")}
+                  className="flex h-[72px] cursor-pointer items-center justify-center border-t border-[var(--border-color)] bg-[var(--primary-light)]/30 transition-all hover:bg-[var(--primary-light)]/60"
+                >
+                  {blocks[`${date}-bonus`] ? (
+                    <div className="flex flex-col items-center gap-1">
+                      <MiniStarDisplay score={blocks[`${date}-bonus`].score} size={14} />
+                      <span className="max-w-[100px] truncate text-[10px] font-bold text-gray-500">
+                        {blocks[`${date}-bonus`].content || "补充说明"}
+                      </span>
+                    </div>
+                  ) : (
+                    <PlusCircle size={18} className="text-[var(--primary-color)]/50" />
+                  )}
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </section>
       </div>
     </div>
   );
 }
 
 function WeekGridCell({
-  dateStr,
-  hourIdx,
+  date,
+  hour,
   block,
-  isSleep,
-  isCurrentHourCell,
+  allVisibleHours,
   onCellClick,
   onCharge,
   onDragMove,
-  settings,
-  allVisibleHours
-}: any) {
+}: {
+  date: string;
+  hour: number;
+  block?: TimeBlock;
+  allVisibleHours: number[];
+  onCellClick: (date: string, hour: number | string) => void;
+  onCharge: (date: string, hour: number, score: Score) => void;
+  onDragMove: (date: string, fromHour: number, toHour: number) => void;
+}) {
+  const dragControls = useDragControls();
+  const suppressClickRef = useRef(false);
   const { isCharging, chargeProgress, currentChargeScore, startCharging, stopCharging } = useLongPressCharge({
-    onChargeComplete: (score) => onCharge(dateStr, hourIdx, score),
+    onChargeComplete: (score) => {
+      suppressClickRef.current = true;
+      onCharge(date, hour, score);
+    },
   });
 
-  const isPlanned = block?.status === 'planned';
-  const isCompleted = block?.status === 'completed';
-  const isPrimaryTheme = isCompleted && block.score !== 0 && block.score !== -1;
-
-  const handleDragEnd = (event: any, info: any) => {
-    if (!block) return;
-    const yOffset = info.offset.y;
-    const rowHeight = 64; // h-16
-    const hourDiff = Math.round(yOffset / rowHeight);
-    
-    if (hourDiff !== 0) {
-      const currentIndex = allVisibleHours.indexOf(hourIdx);
-      const targetIndex = currentIndex + hourDiff;
-      if (targetIndex >= 0 && targetIndex < allVisibleHours.length) {
-        onDragMove(dateStr, hourIdx, allVisibleHours[targetIndex]);
-      }
-    }
-  };
-
   return (
-    <div 
-      className={`h-14 sm:h-16 relative group p-[1px] sm:p-[2px] 
-        ${isSleep ? 'sleep-hour-bg' : ''}
-        ${isCurrentHourCell ? 'z-20' : ''}
-      `}
+    <motion.div
+      layout
+      drag={!!block}
+      dragListener={false}
+      dragControls={dragControls}
+      dragMomentum={false}
+      dragElastic={0.08}
+      onDragEnd={(_, info) => {
+        if (!block) return;
+        const sourceIndex = allVisibleHours.indexOf(hour);
+        const nextIndex = Math.max(
+          0,
+          Math.min(allVisibleHours.length - 1, sourceIndex + Math.round(info.offset.y / 72)),
+        );
+        if (nextIndex !== sourceIndex) {
+          onDragMove(date, hour, allVisibleHours[nextIndex]);
+        }
+        suppressClickRef.current = true;
+        window.setTimeout(() => {
+          suppressClickRef.current = false;
+        }, 120);
+      }}
+      onPointerDown={(event) => {
+        if (event.button !== 0) return;
+        suppressClickRef.current = false;
+        startCharging();
+      }}
+      onPointerUp={() => {
+        const finalScore = stopCharging();
+        if (finalScore > 0) {
+          suppressClickRef.current = true;
+          window.setTimeout(() => {
+            suppressClickRef.current = false;
+          }, 120);
+        }
+      }}
+      onPointerLeave={() => stopCharging()}
+      onClick={() => {
+        if (suppressClickRef.current) return;
+        onCellClick(date, hour);
+      }}
+      className={`relative flex h-[72px] cursor-pointer items-center border-b border-[var(--border-color)] px-2 py-1 last:border-b-0 ${
+        SLEEP_HOURS.includes(hour) ? "bg-black/[0.02] dark:bg-white/[0.02]" : "bg-transparent"
+      }`}
+      style={block ? { backgroundColor: getScoreColor(block.score, block.status) } : undefined}
     >
-      <motion.div 
-        layout
-        drag={!!block}
-        dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
-        dragElastic={0.1}
-        dragTransition={{ bounceStiffness: 600, bounceDamping: 20 }}
-        onDragEnd={handleDragEnd}
-        onPointerDown={(e: React.PointerEvent) => {
-          if (e.button === 0) startCharging();
-        }}
-        onPointerUp={() => stopCharging()}
-        onPointerLeave={() => stopCharging()}
-        onClick={(e) => {
-          // Prevent click if we were dragging or charging significantly
-          onCellClick(dateStr, hourIdx);
-        }}
-        className={`w-full h-full rounded-[10px] sm:rounded-[14px] transition-all duration-300 relative overflow-hidden shadow-sm flex flex-col items-center justify-center
-          ${isPlanned ? 'border-2 border-dashed border-[var(--primary-color)]/30 bg-[var(--primary-light)]' : ''}
-          ${isCompleted && block.score !== 0 ? 'dark:border-white/5 active:scale-95' : 'bg-black/[0.02] dark:bg-white/[0.02]'}
-          ${isCurrentHourCell ? 'ring-2 ring-inset ring-[var(--primary-color)] shadow-[0_0_10px_var(--primary-glow)]' : ''}
-          ${isCharging ? 'scale-[0.98] brightness-110 shadow-lg' : ''}
-        `}
-        style={isCompleted ? { backgroundColor: getScoreColor(block.score, block.status) } : {}}
-      >
-        <AnimatePresence>
-          {isCharging && (
-            <ChargingOverlay 
-              progress={chargeProgress} 
-              score={currentChargeScore} 
-              isComplete={currentChargeScore === 1} 
-            />
-          )}
-        </AnimatePresence>
-
-        <div className="absolute inset-0 bg-black/5 dark:bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-        
-        {block && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-0.5 px-0.5 pointer-events-none select-none">
-            {isCompleted && block.score !== 0 && (
-              <div className="flex items-center gap-0.5 scale-[0.8] sm:scale-[0.9]">
-                <MiniStarDisplay score={block.score} size={10} color={isPrimaryTheme ? 'white' : undefined} />
-                {block.pomodoros && block.pomodoros > 0 && settings.showDetailsInWeekView && (
-                  <span className={`text-[8px] font-bold ${isPrimaryTheme ? 'text-white' : 'text-[var(--primary-color)]'}`}>🍅x{block.pomodoros}</span>
-                )}
-              </div>
-            )}
-            
-            {(settings.showDetailsInWeekView || isPlanned) && (
-              <span className={`text-[8px] sm:text-[9px] font-black truncate w-full text-center leading-tight px-1
-                ${isPlanned ? 'text-[var(--primary-color)]' : isPrimaryTheme ? 'text-white/90' : 'text-[var(--foreground)] opacity-60'}
-              `}>
-                {block.content}
-              </span>
-            )}
-            
-            {!settings.showDetailsInWeekView && block.score === 0 && !isPlanned && (
-              <div className="w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-gray-700 opacity-20" />
-            )}
-          </div>
+      <AnimatePresence>
+        {isCharging && (
+          <ChargingOverlay
+            progress={chargeProgress}
+            score={currentChargeScore}
+            isComplete={currentChargeScore === 1}
+          />
         )}
-      </motion.div>
+      </AnimatePresence>
+
+      {block ? (
+        <div className="relative z-10 flex w-full items-center justify-between gap-2">
+          <div className="min-w-0">
+            {block.tagId && <p className="text-[11px] font-black text-[var(--foreground)]">已标记</p>}
+            <p className="truncate text-[10px] font-medium text-[var(--foreground)]/75">
+              {block.content || (block.status === "planned" ? "待补充计划" : "点击补充说明")}
+            </p>
+          </div>
+          <div className="flex items-center gap-1">
+            {block.status === "completed" && block.score !== 0 && <MiniStarDisplay score={block.score} size={12} />}
+            <button
+              type="button"
+              onPointerDown={(event) => {
+                event.stopPropagation();
+                stopCharging();
+                suppressClickRef.current = true;
+                dragControls.start(event);
+              }}
+              className="rounded-full border border-[var(--border-color)] bg-white/80 p-1 text-gray-400 dark:bg-black/20"
+              aria-label="拖动时间块"
+            >
+              <GripVertical size={12} />
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="relative z-10 w-full text-center text-[10px] font-bold text-gray-300">空</div>
+      )}
+    </motion.div>
+  );
+}
+
+function StatPill({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-[22px] border border-[var(--border-color)] bg-black/[0.02] px-4 py-3 dark:bg-white/[0.03]">
+      <p className="text-[11px] font-black uppercase tracking-[0.22em] text-gray-400">{label}</p>
+      <p className="mt-2 text-lg font-black">{value}</p>
     </div>
   );
 }

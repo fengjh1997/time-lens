@@ -50,8 +50,17 @@ CREATE TABLE IF NOT EXISTS public.settings (
   primary_color TEXT DEFAULT 'amber',
   hide_sleep_time BOOLEAN DEFAULT true,
   decimal_places INTEGER DEFAULT 1,
+  show_details_in_week_view BOOLEAN DEFAULT true,
+  daily_energy_goal INTEGER DEFAULT 5,
+  weekly_energy_goal INTEGER DEFAULT 30,
+  tags_json JSONB DEFAULT '[]'::jsonb,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
+
+ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS show_details_in_week_view BOOLEAN DEFAULT true;
+ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS daily_energy_goal INTEGER DEFAULT 5;
+ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS weekly_energy_goal INTEGER DEFAULT 30;
+ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS tags_json JSONB DEFAULT '[]'::jsonb;
 
 ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
 

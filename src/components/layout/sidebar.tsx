@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { 
   Calendar, 
@@ -106,7 +107,7 @@ export default function Sidebar() {
             >
               <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[var(--primary-color)]/20 to-[var(--primary-color)]/10 flex items-center justify-center text-[var(--primary-color)] overflow-hidden">
                 {profile?.avatar_url ? (
-                  <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                  <Image src={profile.avatar_url} alt="" width={40} height={40} className="w-full h-full object-cover" />
                 ) : (
                   <User size={20} />
                 )}

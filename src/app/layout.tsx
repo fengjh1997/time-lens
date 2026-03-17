@@ -1,7 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Outfit } from "next/font/google";
 import "./globals.css";
-import Sidebar from "@/components/layout/sidebar";
+import DesktopDock from "@/components/layout/DesktopDock";
 import MobileNav from "@/components/layout/MobileNav";
 import ThemeProvider from "@/components/layout/ThemeProvider";
 import AuthProvider from "@/components/layout/AuthProvider";
@@ -9,20 +9,20 @@ import AuthProvider from "@/components/layout/AuthProvider";
 const outfit = Outfit({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Time Lens | 星辰透镜",
-  description: "捕捉每一刻的心流状态 - Time Lens 时间管理与规划",
+  title: "Time Lens",
+  description: "A weekly and daily planning canvas with panoramic context.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "星辰透镜",
+    title: "Time Lens",
   },
   formatDetection: {
     telephone: false,
   },
 };
 
-export const viewport = {
+export const viewport: Viewport = {
   themeColor: "#10b981",
   width: "device-width",
   initialScale: 1,
@@ -44,11 +44,10 @@ export default function RootLayout({
               <div className="ambient-blob-1" />
               <div className="ambient-blob-2" />
             </div>
-            <div className="flex h-screen overflow-hidden relative">
-              <Sidebar />
-              <main className="flex-1 min-w-0 overflow-hidden relative">
-                {children}
-              </main>
+
+            <div className="relative flex h-screen flex-col overflow-hidden">
+              <DesktopDock />
+              <main className="relative min-w-0 flex-1 overflow-hidden">{children}</main>
               <MobileNav />
             </div>
           </ThemeProvider>

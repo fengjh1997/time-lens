@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef, useCallback } from 'react';
-import { Score } from '@/types';
+import { useCallback, useRef, useState } from "react";
+import type { Score } from "@/types";
 
 interface UseLongPressChargeProps {
   onChargeComplete: (score: Score) => void;
@@ -10,87 +10,121 @@ interface UseLongPressChargeProps {
   onCancel?: () => void;
 }
 
+const STEP_MAP: Array<{ threshold: number; score: Score }> = [
+  { threshold: 760, score: 1 },
+  { threshold: 560, score: 0.75 },
+  { threshold: 360, score: 0.5 },
+  { threshold: 180, score: 0.25 },
+];
+
 export function useLongPressCharge({
   onChargeComplete,
   onChargeStep,
   onStart,
-  onCancel
+  onCancel,
 }: UseLongPressChargeProps) {
   const [isCharging, setIsCharging] = useState(false);
-  const isChargingRef = useRef(false);
-  const [chargeProgress, setChargeProgress] = useState(0); 
+  const [chargeProgress, setChargeProgress] = useState(0);
   const [currentChargeScore, setCurrentChargeScore] = useState<Score>(0);
-  
+
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const startTimeRef = useRef<number>(0);
+  const startTimeRef = useRef(0);
+  const activeRef = useRef(false);
 
-  const startCharging = useCallback(() => {
-    if (isChargingRef.current) return;
-    
-    setIsCharging(true);
-    isChargingRef.current = true;
-    setChargeProgress(0);
-    setCurrentChargeScore(0);
-    startTimeRef.current = Date.now();
-    onStart?.();
+  const clearTimer = () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  };
 
-    const updateProgress = () => {
-      if (!isChargingRef.current) return;
+  const stopCharging = useCallback(
+    (completed = false) => {
+      clearTimer();
+
+      if (!activeRef.current) return currentChargeScore;
 
       const elapsed = Date.now() - startTimeRef.current;
-      const progress = Math.min(elapsed / 800, 1);
-      setChargeProgress(progress);
+      const finalScore =
+        completed || elapsed >= STEP_MAP[0].threshold
+          ? 1
+          : elapsed >= STEP_MAP[1].threshold
+            ? 0.75
+            : elapsed >= STEP_MAP[2].threshold
+              ? 0.5
+              : elapsed >= STEP_MAP[3].threshold
+                ? 0.25
+                : 0;
 
-      let newScore: Score = 0;
-      if (elapsed >= 800) newScore = 1;
-      else if (elapsed >= 600) newScore = 0.75;
-      else if (elapsed >= 400) newScore = 0.5;
-      else if (elapsed >= 200) newScore = 0.25;
-
-      if (newScore !== currentChargeScore) {
-        setCurrentChargeScore(newScore);
-        onChargeStep?.(newScore);
+      if (!completed) {
+        if (finalScore > 0) {
+          onChargeComplete(finalScore);
+        } else {
+          onCancel?.();
+        }
       }
 
-      if (elapsed >= 800) {
+      activeRef.current = false;
+      setIsCharging(false);
+      setChargeProgress(0);
+      setCurrentChargeScore(0);
+      return finalScore;
+    },
+    [currentChargeScore, onCancel, onChargeComplete],
+  );
+
+  const startCharging = useCallback(() => {
+    if (activeRef.current) return;
+
+    activeRef.current = true;
+    startTimeRef.current = Date.now();
+    setIsCharging(true);
+    setChargeProgress(0);
+    setCurrentChargeScore(0);
+    onStart?.();
+
+    const tick = () => {
+      if (!activeRef.current) return;
+
+      const elapsed = Date.now() - startTimeRef.current;
+      const nextProgress = Math.min(elapsed / STEP_MAP[0].threshold, 1);
+      setChargeProgress(nextProgress);
+
+      const nextScore =
+        elapsed >= STEP_MAP[0].threshold
+          ? 1
+          : elapsed >= STEP_MAP[1].threshold
+            ? 0.75
+            : elapsed >= STEP_MAP[2].threshold
+              ? 0.5
+              : elapsed >= STEP_MAP[3].threshold
+                ? 0.25
+                : 0;
+
+      setCurrentChargeScore((previous) => {
+        if (previous !== nextScore) {
+          onChargeStep?.(nextScore);
+        }
+        return nextScore;
+      });
+
+      if (elapsed >= STEP_MAP[0].threshold) {
         onChargeComplete(1);
         stopCharging(true);
         return;
       }
 
-      timerRef.current = setTimeout(updateProgress, 16);
+      timerRef.current = setTimeout(tick, 16);
     };
 
-    timerRef.current = setTimeout(updateProgress, 16);
-  }, [onChargeComplete, onChargeStep, onStart, currentChargeScore]);
-
-  const stopCharging = useCallback((completed = false) => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-    
-    if (!completed && isChargingRef.current) {
-      const elapsed = Date.now() - startTimeRef.current;
-      if (elapsed < 200) {
-        onCancel?.();
-      } else {
-        // Commit whatever score reached
-        onChargeComplete(currentChargeScore);
-      }
-    }
-
-    setIsCharging(false);
-    isChargingRef.current = false;
-    setChargeProgress(0);
-    setCurrentChargeScore(0);
-  }, [currentChargeScore, onChargeComplete, onCancel]);
+    timerRef.current = setTimeout(tick, 16);
+  }, [onChargeComplete, onChargeStep, onStart, stopCharging]);
 
   return {
     isCharging,
     chargeProgress,
     currentChargeScore,
     startCharging,
-    stopCharging
+    stopCharging,
   };
 }

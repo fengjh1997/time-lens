@@ -1,319 +1,161 @@
 "use client";
 
-import { useState } from "react";
-import { useTimeStore, SCORE_ENERGY } from "@/store/timeStore";
+import { useMemo, useState } from "react";
+import { Clock3, Flame, Target, TrendingUp, Zap } from "lucide-react";
 import { EnergyDisplay } from "@/components/ui/StarRating";
-import { Flame, TrendingUp, Clock, Zap, Award, Target } from "lucide-react";
-
-const DAY_NAMES = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
+import { SCORE_ENERGY, useTimeStore } from "@/store/timeStore";
 
 export default function DashboardPage() {
   const { blocks, totalEnergy, tags, settings } = useTimeStore();
-
   const [selectedTagId, setSelectedTagId] = useState<string | undefined>(tags[0]?.id);
-  const selectedTag = tags.find(t => t.id === selectedTagId);
 
-  // Generate dynamic week dates
-  const weekDates = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() - d.getDay() + (d.getDay() === 0 ? -6 : 1) + i);
-    return d.toISOString().split('T')[0];
+  const completedBlocks = Object.values(blocks).filter((block) => block.status === "completed");
+  const totalBlocks = completedBlocks.length;
+
+  const last7Days = useMemo(() => {
+    return Array.from({ length: 7 }, (_, index) => {
+      const date = new Date();
+      date.setDate(date.getDate() - (6 - index));
+      const dateStr = date.toISOString().split("T")[0];
+      const energy = completedBlocks
+        .filter((block) => block.id.startsWith(dateStr))
+        .reduce((sum, block) => sum + SCORE_ENERGY[block.score], 0);
+      return { date: dateStr.slice(5), energy };
+    });
+  }, [completedBlocks]);
+
+  const hourly = Array.from({ length: 24 }, (_, hour) => {
+    const energy = completedBlocks
+      .filter((block) => Number(block.hourId) === hour)
+      .reduce((sum, block) => sum + SCORE_ENERGY[block.score], 0);
+    return { hour, energy };
   });
 
-  // Daily energies
-  const dailyScores = weekDates.map(date => {
-    const dayBlocks = Object.keys(blocks)
-      .filter(key => key.startsWith(date))
-      .map(key => blocks[key])
-      .filter(b => b.status === 'completed');
-    const energy = dayBlocks.reduce((acc, b) => acc + SCORE_ENERGY[b.score], 0);
-    const count = dayBlocks.length;
-    return { date, energy, count };
-  });
-  const maxDailyEnergy = Math.max(...dailyScores.map(d => Math.abs(d.energy)), 0.1);
+  const bestHour = hourly.reduce((best, current) => (current.energy > best.energy ? current : best), hourly[0]);
+  const currentStreak = last7Days.reduceRight((streak, day, index, arr) => {
+    if (day.energy > 0) return streak + 1;
+    return index === arr.length - 1 ? streak : streak;
+  }, 0);
 
-  // Tag distribution
-  const tagCounts: Record<string, number> = {};
-  Object.values(blocks).filter(b => b.status === 'completed').forEach(block => {
-    if (block.tagId) tagCounts[block.tagId] = (tagCounts[block.tagId] || 0) + 1;
-  });
-  const totalTagged = Object.values(tagCounts).reduce((a, b) => a + b, 0);
+  const tagCounts = tags.map((tag) => ({
+    ...tag,
+    count: completedBlocks.filter((block) => block.tagId === tag.id).length,
+  }));
 
-  // Hourly heat
-  const hourlyEnergy: number[] = Array(24).fill(0);
-  const hourlyCounts: number[] = Array(24).fill(0);
-  Object.values(blocks).filter(b => b.status === 'completed').forEach(block => {
-    hourlyEnergy[block.hourId] += SCORE_ENERGY[block.score];
-    hourlyCounts[block.hourId] += 1;
-  });
-  const bestHour = hourlyEnergy.indexOf(Math.max(...hourlyEnergy));
-  const maxHourlyEnergy = Math.max(...hourlyEnergy, 0.1);
-
-  // Streak
-  let currentStreak = 0;
-  for (let i = dailyScores.length - 1; i >= 0; i--) {
-    if (dailyScores[i].energy > 0) currentStreak++;
-    else if (dailyScores[i].count === 0 && i === dailyScores.length - 1) continue; // skip today if empty
-    else break;
-  }
-
-  const bestDayIdx = dailyScores.reduce((best, curr, idx) => 
-    curr.energy > dailyScores[best].energy ? idx : best, 0);
-
-  const totalBlocks = Object.values(blocks).filter(b => b.status === 'completed').length;
-
-  // Generate last 30 days for heatmap
-  const last30Days = Array.from({ length: 30 }, (_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() - (29 - i));
-    return d.toISOString().split('T')[0];
-  });
+  const selectedTag = tags.find((tag) => tag.id === selectedTagId);
 
   return (
-    <div className="flex flex-col h-full bg-[var(--background)] overflow-y-auto pb-28 sm:pb-8">
-      <header className="px-4 sm:px-8 py-6 border-b border-[var(--border-color)] sticky top-0 bg-[var(--background)]/80 backdrop-blur-md z-20">
-        <h1 className="text-[20px] sm:text-[24px] font-black tracking-tight">数据洞察</h1>
-        <p className="text-[12px] text-gray-400 font-bold mt-1 tracking-widest uppercase">
-          {new Date().getMonth() + 1}月 · 产出全分析
-        </p>
-      </header>
+    <div className="h-full overflow-y-auto bg-[var(--background)] pb-32 sm:pb-10">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-5 sm:px-6">
+        <section className="rounded-[32px] border border-[var(--border-color)] bg-white/75 p-5 shadow-[var(--shadow-sm)] dark:bg-white/5">
+          <p className="text-[11px] uppercase tracking-[0.3em] text-[var(--primary-color)] font-black">Insights</p>
+          <h1 className="mt-2 text-3xl font-black">数据概览</h1>
+          <p className="mt-2 text-sm text-gray-500">用更轻量的方式看趋势，不抢占主操作流。</p>
+        </section>
 
-      <div className="flex-1 p-4 sm:p-8 space-y-6 sm:space-y-10 max-w-6xl mx-auto w-full">
-        {/* Summary Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          <SummaryCard icon={<Zap size={22} />} label="总能量值" value={<EnergyDisplay value={totalEnergy} />} isPrimary />
-          <SummaryCard icon={<Flame size={22} />} label="连续打卡" value={`${currentStreak} 天`} accent="#f43f5e" />
-          <SummaryCard icon={<Target size={22} />} label="总记录数" value={`${totalBlocks} 个块`} accent="#10b981" />
-          <SummaryCard icon={<Award size={22} />} label="本周最佳" value={DAY_NAMES[bestDayIdx] || '无'} accent="#8b5cf6" />
-        </div>
+        <section className="grid gap-4 md:grid-cols-4">
+          <SummaryCard icon={<Zap size={18} />} label="总能量" value={<EnergyDisplay value={totalEnergy} decimals={settings.decimalPlaces} />} />
+          <SummaryCard icon={<Flame size={18} />} label="已完成块" value={String(totalBlocks)} />
+          <SummaryCard icon={<TrendingUp size={18} />} label="连续正能量" value={`${currentStreak} 天`} />
+          <SummaryCard icon={<Clock3 size={18} />} label="黄金时段" value={`${bestHour.hour}:00`} />
+        </section>
 
-        {/* Tag Specific Heatmap Section */}
-        <div className="bg-black/[0.02] dark:bg-white/[0.02] rounded-[32px] p-6 sm:p-8 border border-[var(--border-color)]">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
-            <div>
-              <h2 className="text-[17px] font-black flex items-center gap-2">
-                <Target size={18} className="text-[var(--primary-color)]" />
-                标签能量分布图
-              </h2>
-              <p className="text-[12px] text-gray-400 font-bold mt-1">查看特定领域的投射热力</p>
+        <section className="grid gap-6 lg:grid-cols-[1.3fr_1fr]">
+          <div className="rounded-[32px] border border-[var(--border-color)] bg-white/75 p-5 shadow-[var(--shadow-sm)] dark:bg-white/5">
+            <div className="flex items-center gap-2">
+              <TrendingUp size={18} className="text-[var(--primary-color)]" />
+              <h2 className="text-lg font-black">近 7 天能量</h2>
             </div>
-            
-            <div className="flex gap-2 items-center bg-black/5 dark:bg-white/5 p-1.5 rounded-2xl overflow-x-auto no-scrollbar">
-              {tags.map(tag => (
-                <button
-                  key={tag.id}
-                  onClick={() => setSelectedTagId(tag.id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[12px] font-black transition-all whitespace-nowrap
-                    ${selectedTagId === tag.id ? 'bg-white dark:bg-white/10 shadow-sm text-[var(--primary-color)]' : 'text-gray-400 opacity-60 hover:opacity-100'}
-                  `}
-                >
-                  <span>{tag.emoji}</span>
-                  <span>{tag.name}</span>
-                </button>
+
+            <div className="mt-6 flex h-56 items-end gap-3">
+              {last7Days.map((day) => (
+                <div key={day.date} className="flex flex-1 flex-col items-center gap-2">
+                  <div className="text-[12px] font-black text-[var(--primary-color)]">{day.energy.toFixed(settings.decimalPlaces)}</div>
+                  <div className="flex w-full items-end justify-center rounded-[22px] bg-black/[0.03] dark:bg-white/[0.04]">
+                    <div
+                      className="w-full rounded-[22px] bg-[var(--primary-color)]"
+                      style={{ height: `${Math.max(12, Math.abs(day.energy) * 28)}px`, opacity: day.energy === 0 ? 0.2 : 1 }}
+                    />
+                  </div>
+                  <div className="text-[11px] font-black text-gray-400">{day.date}</div>
+                </div>
               ))}
             </div>
           </div>
 
-          <div className="grid grid-cols-7 sm:grid-cols-10 md:grid-cols-15 lg:grid-cols-30 gap-2.5">
-            {last30Days.map(date => {
-              const dayBlocks = Object.values(blocks).filter(b => b.status === 'completed' && b.tagId === selectedTagId && b.id.startsWith(date));
-              const energy = dayBlocks.reduce((acc, b) => acc + SCORE_ENERGY[b.score], 0);
-              
-              const opacity = Math.min(energy / 4, 1); // Max 4 stars for max opacity
-              const isActive = energy > 0;
+          <div className="rounded-[32px] border border-[var(--border-color)] bg-white/75 p-5 shadow-[var(--shadow-sm)] dark:bg-white/5">
+            <div className="flex items-center gap-2">
+              <Target size={18} className="text-[var(--primary-color)]" />
+              <h2 className="text-lg font-black">标签分布</h2>
+            </div>
 
-              return (
-                <div key={date} className="relative group flex flex-col items-center">
-                  <div 
-                    className={`w-full aspect-square rounded-[8px] sm:rounded-[12px] transition-all hover:scale-110 border border-transparent
-                      ${!isActive ? 'bg-black/[0.03] dark:bg-white/[0.03]' : ''}
-                    `}
-                    style={isActive ? { 
-                      backgroundColor: selectedTag?.color || 'var(--primary-color)',
-                      opacity: 0.2 + (opacity * 0.8),
-                      borderColor: 'rgba(255,255,255,0.1)'
-                    } : {}}
-                  />
-                  <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-[var(--foreground)] text-[var(--background)] text-[10px] px-2.5 py-1.5 rounded-xl font-black z-50 pointer-events-none shadow-xl border border-white/10">
-                    {date}: {energy.toFixed(1)}★
+            <div className="mt-4 flex flex-wrap gap-2">
+              {tags.map((tag) => (
+                <button
+                  key={tag.id}
+                  type="button"
+                  onClick={() => setSelectedTagId(tag.id)}
+                  className={`rounded-full px-4 py-2 text-[12px] font-black transition-all ${
+                    selectedTagId === tag.id ? "text-white" : "bg-black/[0.03] text-gray-500 dark:bg-white/[0.04]"
+                  }`}
+                  style={selectedTagId === tag.id ? { backgroundColor: tag.color } : undefined}
+                >
+                  {tag.emoji} {tag.name}
+                </button>
+              ))}
+            </div>
+
+            <div className="mt-6 space-y-4">
+              {tagCounts
+                .filter((tag) => tag.count > 0)
+                .sort((left, right) => right.count - left.count)
+                .map((tag) => (
+                  <div key={tag.id}>
+                    <div className="mb-2 flex items-center justify-between text-sm font-black">
+                      <span>{tag.name}</span>
+                      <span className="text-gray-400">{tag.count}</span>
+                    </div>
+                    <div className="h-2 overflow-hidden rounded-full bg-black/[0.05] dark:bg-white/[0.06]">
+                      <div
+                        className="h-full rounded-full"
+                        style={{
+                          width: `${Math.max(6, (tag.count / Math.max(totalBlocks, 1)) * 100)}%`,
+                          backgroundColor: tag.color,
+                        }}
+                      />
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-          
-          <div className="flex items-center justify-center gap-4 mt-8 opacity-40">
-             <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">活跃度</div>
-             <div className="flex gap-1.5">
-                {[0.2, 0.4, 0.6, 0.8, 1].map(op => (
-                   <div key={op} className="w-4 h-4 rounded-md" style={{ backgroundColor: selectedTag?.color || 'var(--primary-color)', opacity: op }} />
                 ))}
-             </div>
-          </div>
-        </div>
-
-        {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 sm:gap-8">
-          {/* Main Trend Chart */}
-          <div className="lg:col-span-3 bg-black/[0.02] dark:bg-white/[0.02] rounded-[32px] p-6 sm:p-8 border border-[var(--border-color)]">
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <h2 className="text-[17px] font-black">能量产出趋势</h2>
-                <p className="text-[12px] text-gray-400 font-bold mt-1">本周每日累计星数</p>
-              </div>
             </div>
-            <div className="flex items-end justify-between gap-3 h-48 sm:h-56">
-              {dailyScores.map((day, i) => {
-                const height = Math.abs(day.energy) / maxDailyEnergy * 100;
-                const isNeg = day.energy < 0;
-                return (
-                  <div key={day.date} className="flex-1 flex flex-col items-center gap-3">
-                    <span className={`text-[12px] font-black ${isNeg ? 'text-red-500' : 'text-[var(--primary-color)]'}`}>
-                      {day.energy > 0 ? '+' : ''}{day.energy.toFixed(1)}
-                    </span>
-                    <div className="w-full flex justify-center">
-                      <div 
-                        className={`w-full max-w-[42px] rounded-2xl transition-all duration-700 relative group
-                          ${isNeg ? 'bg-red-400/30' : 'bg-gradient-to-t from-[var(--primary-color)] to-[var(--primary-color)]/60 shadow-lg shadow-[var(--primary-glow)]'}
-                        `}
-                        style={{ height: `${Math.max(height, 8)}%`, minHeight: '12px' }}
-                      >
-                         <div className="absolute inset-x-0 -top-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-black text-white text-[10px] px-2 py-1 rounded pointer-events-none">
-                            {day.count} 个记录
-                         </div>
-                      </div>
-                    </div>
-                    <span className="text-[11px] text-gray-400 font-black uppercase tracking-tighter">{DAY_NAMES[i]}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
 
-          {/* Tag Distribution */}
-          <div className="lg:col-span-2 bg-black/[0.02] dark:bg-white/[0.02] rounded-[32px] p-6 sm:p-8 border border-[var(--border-color)]">
-            <h2 className="text-[17px] font-black mb-1">时间投资矩阵</h2>
-            <p className="text-[12px] text-gray-400 font-bold mb-8">按任务标签权重</p>
-            <div className="space-y-6">
-              {tags
-                .filter(tag => tagCounts[tag.id])
-                .sort((a, b) => (tagCounts[b.id] || 0) - (tagCounts[a.id] || 0))
-                .map(tag => {
-                  const count = tagCounts[tag.id] || 0;
-                  const pct = totalTagged > 0 ? Math.round((count / totalTagged) * 100) : 0;
-                  return (
-                    <div key={tag.id} className="group">
-                      <div className="flex justify-between items-center mb-2">
-                        <div className="flex items-center gap-3">
-                           <span className="text-xl">{tag.emoji}</span>
-                           <span className="text-[13px] font-black">{tag.name}</span>
-                        </div>
-                        <span className="text-[11px] font-black text-gray-400">{count}h · {pct}%</span>
-                      </div>
-                      <div className="w-full h-2.5 bg-black/5 dark:bg-white/5 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full rounded-full transition-all duration-1000 origin-left" 
-                          style={{ width: `${pct}%`, backgroundColor: tag.color }} 
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-            </div>
-          </div>
-        </div>
-
-        {/* Hourly Golden Hour Heatmap */}
-        <div className="bg-black/[0.02] dark:bg-white/[0.02] rounded-[32px] p-6 sm:p-8 border border-[var(--border-color)]">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h2 className="text-[17px] font-black flex items-center gap-2">
-                <Clock size={18} className="text-[var(--primary-color)]" />
-                黄金产出时段
-              </h2>
-              <p className="text-[12px] text-gray-400 font-bold mt-1">
-                你在 <span className="text-[var(--primary-color)] font-black">{bestHour}:00</span> 表现最为卓越
+            {selectedTag && (
+              <p className="mt-5 text-[12px] font-medium text-gray-500">
+                当前聚焦标签：<span className="font-black" style={{ color: selectedTag.color }}>{selectedTag.name}</span>
               </p>
-            </div>
+            )}
           </div>
-          <div className="grid grid-cols-6 sm:grid-cols-12 md:grid-cols-24 gap-2">
-            {Array.from({ length: 24 }, (_, i) => {
-              const e = hourlyEnergy[i];
-              const opacity = maxHourlyEnergy > 0 ? Math.max(e / maxHourlyEnergy, 0) : 0;
-              const isActive = hourlyCounts[i] > 0;
-              return (
-                <div key={i} className="flex flex-col items-center gap-2">
-                  <div 
-                    className={`w-full aspect-square rounded-[10px] transition-all hover:scale-110 
-                      ${!isActive ? 'bg-black/[0.05] dark:bg-white/[0.05]' : 'shadow-lg shadow-[var(--primary-glow)]'}
-                    `}
-                    style={isActive ? { 
-                      backgroundColor: e >= 0 
-                        ? `rgba(var(--primary-rgb), ${0.2 + opacity * 0.8})`
-                        : `rgb(244 63 94)`,
-                    } : {}}
-                    title={`${i}:00: ${e.toFixed(1)}★`}
-                  />
-                  {(i % 4 === 0) && (
-                    <span className="text-[9px] text-gray-400 font-mono font-black">{i}:00</span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Achievements Section */}
-        <div className="bg-black/[0.02] dark:bg-white/[0.02] rounded-[32px] p-6 sm:p-8 border border-[var(--border-color)]">
-           <h2 className="text-[17px] font-black mb-6 flex items-center gap-2">
-            <TrendingUp size={18} className="text-[var(--primary-color)]" />
-            心流里程碑
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-             <Achievement badge="🔥" title="势如破竹" desc={`${currentStreak}天连续记录`} unlocked={currentStreak >= 3} />
-             <Achievement badge="⭐" title="能量爆表" desc="单日星级超过 5.0★" unlocked={dailyScores.some(d => d.energy >= 5)} />
-             <Achievement badge="🏆" title="本周全勤" desc="记录了本周所有日期" unlocked={dailyScores.every(d => d.count > 0)} />
-          </div>
-        </div>
+        </section>
       </div>
     </div>
   );
 }
 
-function SummaryCard({ icon, label, value, accent, isPrimary }: { icon: React.ReactNode; label: string; value: React.ReactNode; accent?: string; isPrimary?: boolean }) {
+function SummaryCard({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: React.ReactNode;
+}) {
   return (
-    <div className={`rounded-[32px] p-6 border border-white/20 dark:border-white/5 flex flex-col gap-4 shadow-sm hover:translate-y-[-4px] transition-all active:scale-95 group
-      ${isPrimary 
-        ? 'bg-gradient-to-br from-[var(--primary-color)] to-[var(--primary-color)]/80 text-white shadow-xl shadow-[var(--primary-glow)] border-none' 
-        : 'bg-black/[0.02] dark:bg-white/[0.02]'
-      }
-    `}>
-      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white
-        ${isPrimary ? 'bg-white/20' : ''}
-      `} style={!isPrimary ? { backgroundColor: accent } : {}}>
+    <div className="rounded-[28px] border border-[var(--border-color)] bg-white/75 p-5 shadow-[var(--shadow-sm)] dark:bg-white/5">
+      <div className="mb-4 inline-flex rounded-[16px] bg-[var(--primary-light)] p-3 text-[var(--primary-color)]">
         {icon}
       </div>
-      <div>
-        <p className={`text-[12px] font-black uppercase tracking-wider ${isPrimary ? 'opacity-80' : 'text-gray-400'}`}>{label}</p>
-        <p className="text-2xl font-black mt-1 tracking-tight">{value}</p>
-      </div>
-    </div>
-  );
-}
-
-function Achievement({ badge, title, desc, unlocked }: { badge: string; title: string; desc: string; unlocked: boolean }) {
-  return (
-    <div className={`flex items-center gap-4 p-5 rounded-[24px] border transition-all duration-500
-      ${unlocked 
-        ? 'bg-[var(--primary-light)] border-[var(--primary-color)]/20 shadow-sm' 
-        : 'bg-black/[0.02] dark:bg-white/[0.02] border-transparent opacity-40 grayscale'
-      }
-    `}>
-      <span className="text-3xl">{badge}</span>
-      <div>
-        <p className={`text-[14px] font-black ${unlocked ? 'text-[var(--foreground)]' : 'text-gray-500'}`}>{title}</p>
-        <p className="text-[11px] font-bold text-gray-400 mt-0.5">{desc}</p>
-      </div>
+      <p className="text-[11px] uppercase tracking-[0.22em] text-gray-400 font-black">{label}</p>
+      <div className="mt-2 text-2xl font-black">{value}</div>
     </div>
   );
 }

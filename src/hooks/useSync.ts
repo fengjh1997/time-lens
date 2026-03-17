@@ -1,99 +1,211 @@
 "use client";
 
-import { useEffect, useCallback, useRef } from 'react';
-import { useTimeStore } from '@/store/timeStore';
-import { useAuthStore } from '@/store/authStore';
-import { supabase } from '@/lib/supabase';
-import { TimeBlock, Tag } from '@/types';
+import { useCallback, useEffect, useRef } from "react";
+import { supabase } from "@/lib/supabase";
+import { useAuthStore } from "@/store/authStore";
+import { DEFAULT_TAGS, useTimeStore } from "@/store/timeStore";
+import type { Tag, TimeBlock } from "@/types";
+
+function asIso(value?: string | null) {
+  return value || new Date(0).toISOString();
+}
+
+function buildBasicSettingsPayload(settings: ReturnType<typeof useTimeStore.getState>["settings"], userId: string) {
+  return {
+    user_id: userId,
+    theme: settings.theme,
+    primary_color: settings.primaryColor,
+    hide_sleep_time: settings.hideSleepTime,
+    decimal_places: settings.decimalPlaces,
+    updated_at: settings.updatedAt || new Date().toISOString(),
+  };
+}
+
+function buildExtendedSettingsPayload(
+  settings: ReturnType<typeof useTimeStore.getState>["settings"],
+  tags: Tag[],
+  userId: string,
+) {
+  return {
+    ...buildBasicSettingsPayload(settings, userId),
+    show_details_in_week_view: settings.showDetailsInWeekView,
+    daily_energy_goal: settings.dailyEnergyGoal,
+    weekly_energy_goal: settings.weeklyEnergyGoal,
+    tags_json: tags,
+  };
+}
+
+async function upsertSettingsWithFallback(
+  settings: ReturnType<typeof useTimeStore.getState>["settings"],
+  tags: Tag[],
+  userId: string,
+) {
+  const extendedPayload = buildExtendedSettingsPayload(settings, tags, userId);
+  const { error } = await supabase.from("settings").upsert(extendedPayload);
+  if (!error) return true;
+
+  const fallbackPayload = buildBasicSettingsPayload(settings, userId);
+  const { error: fallbackError } = await supabase.from("settings").upsert(fallbackPayload);
+  if (fallbackError) {
+    console.error("Settings sync failed:", fallbackError);
+    return false;
+  }
+  return false;
+}
 
 export function useSync() {
-  const { 
-    blocks, 
-    saveBlock, 
-    settings, 
-    updateSettings, 
-    tags, 
-    addTag,
-    setSyncStatus 
+  const {
+    blocks,
+    saveBlock,
+    settings,
+    updateSettings,
+    tags,
+    setSyncStatus,
+    setLastSyncedAt,
   } = useTimeStore();
   const { user } = useAuthStore();
-  
-  const isSyncingFromCloud = useRef(false);
 
-  // 1. Fetch from Cloud on Login
+  const isSyncingFromCloud = useRef(false);
+  const latestBlocksRef = useRef(blocks);
+  const latestSettingsRef = useRef(settings);
+  const latestTagsRef = useRef(tags);
+
   useEffect(() => {
-    if (!user) return;
+    latestBlocksRef.current = blocks;
+    latestSettingsRef.current = settings;
+    latestTagsRef.current = tags;
+  }, [blocks, settings, tags]);
+
+  const pushSettings = useCallback(async () => {
+    if (!user || !settings.cloudSyncEnabled || isSyncingFromCloud.current) return;
+    const usedExtendedSchema = await upsertSettingsWithFallback(settings, tags, user.id);
+    if (usedExtendedSchema || tags.length === DEFAULT_TAGS.length) {
+      setLastSyncedAt(new Date().toISOString());
+    }
+  }, [settings, tags, user, setLastSyncedAt]);
+
+  useEffect(() => {
+    if (!user || !settings.cloudSyncEnabled) return;
 
     const pullData = async () => {
       isSyncingFromCloud.current = true;
+      setSyncStatus(true);
       try {
-        // Fetch Blocks
-        const { data: cloudBlocks, error: blocksError } = await supabase
-          .from('blocks')
-          .select('*')
-          .eq('user_id', user.id);
+        const { data: cloudBlocks } = await supabase
+          .from("blocks")
+          .select("*")
+          .eq("user_id", user.id);
 
-        if (!blocksError && cloudBlocks) {
-          cloudBlocks.forEach((cb) => {
-            const block: TimeBlock = {
-              id: cb.id,
-              content: cb.content || "",
-              score: cb.score as any,
-              tagId: cb.tag_id,
-              status: cb.status as any,
-              pomodoros: cb.pomodoros,
-              isBonus: cb.is_bonus,
-              dayOfWeek: new Date(cb.date).getDay(),
-              hourId: cb.hour_id,
-            };
-            saveBlock(cb.date, block);
-          });
+        if (cloudBlocks) {
+          for (const cloudBlock of cloudBlocks) {
+            const localKey = `${cloudBlock.date}-${cloudBlock.hour_id}`;
+            const localBlock = latestBlocksRef.current[localKey];
+            const cloudUpdatedAt = asIso(cloudBlock.updated_at);
+            const localUpdatedAt = asIso(localBlock?.updatedAt);
+
+            if (!localBlock || cloudUpdatedAt > localUpdatedAt) {
+              const nextBlock: TimeBlock = {
+                id: cloudBlock.id,
+                content: cloudBlock.content || "",
+                score: cloudBlock.score,
+                tagId: cloudBlock.tag_id || undefined,
+                status: cloudBlock.status,
+                pomodoros: cloudBlock.pomodoros || 0,
+                isBonus: !!cloudBlock.is_bonus,
+                dayOfWeek: new Date(cloudBlock.date).getDay(),
+                hourId: cloudBlock.hour_id,
+                updatedAt: cloudUpdatedAt,
+              };
+              saveBlock(cloudBlock.date, nextBlock);
+            } else if (localUpdatedAt > cloudUpdatedAt) {
+              await supabase.from("blocks").upsert({
+                id: localBlock.id,
+                user_id: user.id,
+                date: cloudBlock.date,
+                hour_id: localBlock.hourId,
+                content: localBlock.content,
+                score: localBlock.score,
+                tag_id: localBlock.tagId,
+                status: localBlock.status,
+                pomodoros: localBlock.pomodoros || 0,
+                is_bonus: localBlock.isBonus || false,
+                updated_at: localUpdatedAt,
+              });
+            }
+          }
         }
 
-        // Fetch Settings
-        const { data: cloudSettings, error: settingsError } = await supabase
-          .from('settings')
-          .select('*')
-          .eq('user_id', user.id)
-          .single();
+        const { data: cloudSettings } = await supabase
+          .from("settings")
+          .select("*")
+          .eq("user_id", user.id)
+          .maybeSingle();
 
-        if (!settingsError && cloudSettings) {
-          updateSettings({
-            theme: cloudSettings.theme as any,
-            primaryColor: cloudSettings.primary_color as any,
-            hideSleepTime: cloudSettings.hide_sleep_time,
-            decimalPlaces: cloudSettings.decimal_places,
-          });
+        if (cloudSettings) {
+          const cloudUpdatedAt = asIso(cloudSettings.updated_at);
+          const localUpdatedAt = asIso(latestSettingsRef.current.updatedAt);
+
+          if (cloudUpdatedAt >= localUpdatedAt) {
+            updateSettings({
+              theme: cloudSettings.theme || latestSettingsRef.current.theme,
+              primaryColor: cloudSettings.primary_color || latestSettingsRef.current.primaryColor,
+              hideSleepTime: cloudSettings.hide_sleep_time ?? latestSettingsRef.current.hideSleepTime,
+              decimalPlaces: cloudSettings.decimal_places ?? latestSettingsRef.current.decimalPlaces,
+              showDetailsInWeekView:
+                cloudSettings.show_details_in_week_view ?? latestSettingsRef.current.showDetailsInWeekView,
+              dailyEnergyGoal: cloudSettings.daily_energy_goal ?? latestSettingsRef.current.dailyEnergyGoal,
+              weeklyEnergyGoal: cloudSettings.weekly_energy_goal ?? latestSettingsRef.current.weeklyEnergyGoal,
+              updatedAt: cloudUpdatedAt,
+            });
+
+            if (Array.isArray(cloudSettings.tags_json)) {
+              const cloudTags = cloudSettings.tags_json as Tag[];
+              const store = useTimeStore.getState();
+              store.tags
+                .filter((tag) => !cloudTags.some((cloudTag) => cloudTag.id === tag.id))
+                .forEach((localOnlyTag) => store.removeTag(localOnlyTag.id));
+              cloudTags.forEach((tag) => {
+                if (store.tags.some((existing) => existing.id === tag.id)) {
+                  store.updateTag(tag);
+                } else {
+                  store.addTag(tag);
+                }
+              });
+            }
+          } else {
+            await upsertSettingsWithFallback(latestSettingsRef.current, latestTagsRef.current, user.id);
+          }
+        } else {
+          await upsertSettingsWithFallback(latestSettingsRef.current, latestTagsRef.current, user.id);
         }
-      } catch (err) {
-        console.error("Sync pull error:", err);
+
+        setLastSyncedAt(new Date().toISOString());
+      } catch (error) {
+        console.error("Sync pull error:", error);
       } finally {
+        setSyncStatus(false);
         isSyncingFromCloud.current = false;
       }
     };
 
     pullData();
-  }, [user, settings.cloudSyncEnabled, saveBlock, updateSettings]);
+  }, [
+    saveBlock,
+    settings.cloudSyncEnabled,
+    updateSettings,
+    user,
+    setLastSyncedAt,
+    setSyncStatus,
+  ]);
 
-  // 1b. Manual Full Sync
   const manualSync = useCallback(async () => {
     if (!user) return;
     setSyncStatus(true);
     try {
-      // Logic to push all local data to cloud
-      // Pushing Settings
-      await supabase.from('settings').upsert({
-        user_id: user.id,
-        theme: settings.theme,
-        primary_color: settings.primaryColor,
-        hide_sleep_time: settings.hideSleepTime,
-        decimal_places: settings.decimalPlaces,
-        updated_at: new Date().toISOString(),
-      });
+      await upsertSettingsWithFallback(settings, tags, user.id);
 
-      // Pushing Blocks (simplified for now: push all)
       const blockEntries = Object.entries(blocks).map(([key, block]) => {
-        const dateStr = key.split('-').slice(0, 3).join('-'); // Extract YYYY-MM-DD
+        const dateStr = key.split("-").slice(0, 3).join("-");
         return {
           id: block.id,
           user_id: user.id,
@@ -103,59 +215,53 @@ export function useSync() {
           score: block.score,
           tag_id: block.tagId,
           status: block.status,
-          pomodoros: block.pomodoros,
-          is_bonus: block.isBonus,
-          updated_at: new Date().toISOString(),
+          pomodoros: block.pomodoros || 0,
+          is_bonus: block.isBonus || false,
+          updated_at: block.updatedAt || new Date().toISOString(),
         };
       });
 
       if (blockEntries.length > 0) {
-        await supabase.from('blocks').upsert(blockEntries);
+        await supabase.from("blocks").upsert(blockEntries);
       }
-      
-      console.log("Manual sync completed");
-    } catch (err) {
-      console.error("Manual sync error:", err);
+
+      setLastSyncedAt(new Date().toISOString());
+    } catch (error) {
+      console.error("Manual sync error:", error);
     } finally {
       setSyncStatus(false);
     }
-  }, [user, blocks, settings, setSyncStatus]);
+  }, [blocks, settings, setLastSyncedAt, setSyncStatus, tags, user]);
 
-  // Push Logic
-  const pushBlock = useCallback(async (block: TimeBlock, dateStr: string) => {
-    if (!user || isSyncingFromCloud.current || !settings.cloudSyncEnabled) return;
+  const pushBlock = useCallback(
+    async (block: TimeBlock, dateStr: string) => {
+      if (!user || !settings.cloudSyncEnabled || isSyncingFromCloud.current) return;
+      await supabase.from("blocks").upsert({
+        id: block.id,
+        user_id: user.id,
+        date: dateStr,
+        hour_id: block.hourId,
+        content: block.content,
+        score: block.score,
+        tag_id: block.tagId,
+        status: block.status,
+        pomodoros: block.pomodoros || 0,
+        is_bonus: block.isBonus || false,
+        updated_at: block.updatedAt || new Date().toISOString(),
+      });
+      setLastSyncedAt(new Date().toISOString());
+    },
+    [settings.cloudSyncEnabled, user, setLastSyncedAt],
+  );
 
-    await supabase.from('blocks').upsert({
-      id: block.id,
-      user_id: user.id,
-      date: dateStr,
-      hour_id: block.hourId,
-      content: block.content,
-      score: block.score,
-      tag_id: block.tagId,
-      status: block.status,
-      pomodoros: block.pomodoros,
-      is_bonus: block.isBonus,
-      updated_at: new Date().toISOString(),
-    });
-  }, [user, settings.cloudSyncEnabled]);
-
-  const deleteCloudBlock = useCallback(async (blockId: string) => {
-    if (!user || isSyncingFromCloud.current || !settings.cloudSyncEnabled) return;
-    await supabase.from('blocks').delete().eq('id', blockId).eq('user_id', user.id);
-  }, [user, settings.cloudSyncEnabled]);
-
-  const pushSettings = useCallback(async () => {
-    if (!user || isSyncingFromCloud.current || !settings.cloudSyncEnabled) return;
-    await supabase.from('settings').upsert({
-      user_id: user.id,
-      theme: settings.theme,
-      primary_color: settings.primaryColor,
-      hide_sleep_time: settings.hideSleepTime,
-      decimal_places: settings.decimalPlaces,
-      updated_at: new Date().toISOString(),
-    });
-  }, [user, settings]);
+  const deleteCloudBlock = useCallback(
+    async (blockId: string) => {
+      if (!user || !settings.cloudSyncEnabled || isSyncingFromCloud.current) return;
+      await supabase.from("blocks").delete().eq("id", blockId).eq("user_id", user.id);
+      setLastSyncedAt(new Date().toISOString());
+    },
+    [settings.cloudSyncEnabled, user, setLastSyncedAt],
+  );
 
   return { pushBlock, deleteCloudBlock, pushSettings, manualSync };
 }

@@ -1,17 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { ArrowRight, Github, Loader2, Lock, Mail, Sparkles, User as UserIcon } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/store/authStore";
-import { useRouter } from "next/navigation";
-import { Sparkles, Mail, Lock, User as UserIcon, ArrowRight, Loader2, Github } from "lucide-react";
-import Link from "next/link";
 
 export default function AuthPage() {
   const { user } = useAuthStore();
   const router = useRouter();
-  
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
@@ -20,199 +18,164 @@ export default function AuthPage() {
   const [regSuccess, setRegSuccess] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      router.push("/day");
-    }
-  }, [user, router]);
+    if (user) router.push("/day");
+  }, [router, user]);
 
-  const handleAuth = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAuth = async (event: React.FormEvent) => {
+    event.preventDefault();
     setLoading(true);
     setError(null);
     setRegSuccess(false);
 
     try {
-      if (mode === 'register') {
-        const { data, error } = await supabase.auth.signUp({
+      if (mode === "register") {
+        const { data, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
           options: {
             data: {
               full_name: fullName,
-            }
-          }
+            },
+          },
         });
-        if (error) throw error;
-        
-        // If data.user exists but data.session is null, it means confirmation is required.
+
+        if (signUpError) throw signUpError;
         if (data.user && !data.session) {
           setRegSuccess(true);
-        } else if (data.session) {
+        } else {
           router.push("/day");
         }
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (error) throw error;
+        const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+        if (signInError) throw signInError;
         router.push("/day");
       }
-    } catch (err: any) {
-      setError(err.message || "身份验证失败");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "认证失败");
     } finally {
       setLoading(false);
     }
   };
 
   const handleGithubLogin = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'github',
+    const { error: oauthError } = await supabase.auth.signInWithOAuth({
+      provider: "github",
       options: {
-        redirectTo: window.location.origin + '/auth/callback',
-      }
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
     });
-    if (error) setError(error.message);
+    if (oauthError) setError(oauthError.message);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="flex min-h-screen items-center justify-center p-4">
       <div className="w-full max-w-md animate-spring">
-        <div className="glass-modal rounded-[48px] p-8 sm:p-12 space-y-8 relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
+        <div className="glass-modal relative overflow-hidden rounded-[42px] p-8 sm:p-10">
+          <div className="absolute right-0 top-0 p-8 opacity-5">
             <Sparkles size={120} className="text-[var(--primary-color)]" />
           </div>
 
-          <div className="text-center space-y-2">
-            <div className="inline-flex p-4 rounded-3xl bg-[var(--primary-light)] text-[var(--primary-color)] mb-4">
-              <Sparkles size={32} />
+          <div className="text-center">
+            <div className="mb-4 inline-flex rounded-[26px] bg-[var(--primary-light)] p-4 text-[var(--primary-color)]">
+              <Sparkles size={28} />
             </div>
-            <h1 className="text-3xl font-black tracking-tight text-[var(--foreground)]">
-              {regSuccess ? '邮件已发出' : (mode === 'login' ? '欢迎回来' : '开启星辰之旅')}
-            </h1>
-            <p className="text-[13px] text-gray-400 font-bold uppercase tracking-widest">
-              {regSuccess ? '请查收确认邮件以激活账号' : (mode === 'login' ? 'TIME LENS · 时间透镜' : '创建您的专属时间蓝图')}
+            <h1 className="text-3xl font-black">{regSuccess ? "查收确认邮件" : mode === "login" ? "欢迎回来" : "创建账号"}</h1>
+            <p className="mt-2 text-[12px] font-bold uppercase tracking-[0.22em] text-gray-400">
+              {regSuccess ? "check your inbox" : "time lens cloud sync"}
             </p>
           </div>
 
           {regSuccess ? (
-            <div className="space-y-6 text-center animate-spring">
-              <div className="p-6 bg-emerald-50 dark:bg-emerald-950/20 rounded-[32px] border border-emerald-500/20">
-                <p className="text-[14px] font-bold text-emerald-600 dark:text-emerald-400 leading-relaxed">
-                  验证邮件已发送至 <span className="underline">{email}</span>。<br/>
-                  确认邮件后即可返回此页面登录。
-                </p>
+            <div className="mt-8 space-y-4 text-center">
+              <div className="rounded-[28px] border border-emerald-500/20 bg-emerald-50 p-5 text-sm font-medium text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-300">
+                已向 {email} 发送确认邮件，验证后再回来登录即可。
               </div>
               <button
+                type="button"
                 onClick={() => {
+                  setMode("login");
                   setRegSuccess(false);
-                  setMode('login');
                 }}
-                className="w-full bg-[var(--primary-color)] text-white py-4.5 rounded-3xl font-black text-[16px] shadow-2xl shadow-[var(--primary-glow)] hover:-translate-y-1 active:scale-95 transition-all"
+                className="w-full rounded-[24px] bg-[var(--primary-color)] px-5 py-4 text-sm font-black text-white shadow-lg shadow-[var(--primary-glow)]"
               >
                 返回登录
               </button>
             </div>
           ) : (
             <>
-              <form onSubmit={handleAuth} className="space-y-5">
-                {mode === 'register' && (
-                  <div className="space-y-1.5">
-                    <div className="relative group">
-                      <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[var(--primary-color)] transition-colors" size={18} />
-                      <input
-                        type="text"
-                        placeholder="您的昵称"
-                        value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
-                        required
-                        className="w-full bg-black/[0.03] dark:bg-white/[0.05] border-2 border-transparent focus:border-[var(--primary-color)]/20 rounded-2xl py-4 pl-12 pr-4 text-[15px] font-bold focus:outline-none focus:ring-4 focus:ring-[var(--primary-glow)] transition-all placeholder:text-gray-400"
-                      />
-                    </div>
-                  </div>
+              <form onSubmit={handleAuth} className="mt-8 space-y-4">
+                {mode === "register" && (
+                  <Field icon={<UserIcon size={18} />} value={fullName} onChange={setFullName} placeholder="昵称" type="text" />
                 )}
+                <Field icon={<Mail size={18} />} value={email} onChange={setEmail} placeholder="邮箱" type="email" />
+                <Field icon={<Lock size={18} />} value={password} onChange={setPassword} placeholder="密码" type="password" />
 
-                <div className="space-y-1.5">
-                  <div className="relative group">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[var(--primary-color)] transition-colors" size={18} />
-                    <input
-                      type="email"
-                      placeholder="电子邮箱"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      className="w-full bg-black/[0.03] dark:bg-white/[0.05] border-2 border-transparent focus:border-[var(--primary-color)]/20 rounded-2xl py-4 pl-12 pr-4 text-[15px] font-bold focus:outline-none focus:ring-4 focus:ring-[var(--primary-glow)] transition-all placeholder:text-gray-400"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <div className="relative group">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[var(--primary-color)] transition-colors" size={18} />
-                    <input
-                      type="password"
-                      placeholder="登录密码"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      className="w-full bg-black/[0.03] dark:bg-white/[0.05] border-2 border-transparent focus:border-[var(--primary-color)]/20 rounded-2xl py-4 pl-12 pr-4 text-[15px] font-bold focus:outline-none focus:ring-4 focus:ring-[var(--primary-glow)] transition-all placeholder:text-gray-400"
-                    />
-                  </div>
-                </div>
-
-                {error && (
-                  <p className="text-[12px] font-bold text-red-500 bg-red-50 dark:bg-red-950/20 px-4 py-2 rounded-xl border border-red-500/20">
-                    {error}
-                  </p>
-                )}
+                {error && <div className="rounded-[18px] bg-red-50 px-4 py-3 text-sm font-medium text-red-500 dark:bg-red-950/20">{error}</div>}
 
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-[var(--primary-color)] text-white py-4.5 rounded-3xl font-black text-[16px] shadow-2xl shadow-[var(--primary-glow)] hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-2 group"
+                  className="flex w-full items-center justify-center gap-2 rounded-[24px] bg-[var(--primary-color)] px-5 py-4 text-sm font-black text-white shadow-lg shadow-[var(--primary-glow)]"
                 >
-                  {loading ? <Loader2 className="animate-spin" size={20} /> : (
-                    <>
-                      {mode === 'login' ? '立即登录' : '立即注册'}
-                      <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
-                    </>
-                  )}
+                  {loading ? <Loader2 size={18} className="animate-spin" /> : mode === "login" ? "登录" : "注册"}
+                  {!loading && <ArrowRight size={18} />}
                 </button>
               </form>
 
-              <div className="relative py-4">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-[var(--border-color)]"></div>
-                </div>
-                <div className="relative flex justify-center text-[11px] font-black uppercase tracking-widest">
-                  <span className="bg-[var(--modal-bg)] px-4 text-gray-400">或者通过</span>
-                </div>
+              <div className="my-6 flex items-center gap-3 text-[11px] font-black uppercase tracking-[0.22em] text-gray-400">
+                <div className="h-px flex-1 bg-[var(--border-color)]" />
+                <span>or</span>
+                <div className="h-px flex-1 bg-[var(--border-color)]" />
               </div>
 
               <button
+                type="button"
                 onClick={handleGithubLogin}
-                className="w-full bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-[var(--foreground)] py-4 rounded-3xl font-bold text-[14px] transition-all flex items-center justify-center gap-3 border border-[var(--border-color)]"
+                className="flex w-full items-center justify-center gap-3 rounded-[24px] border border-[var(--border-color)] bg-black/[0.03] px-5 py-4 text-sm font-black dark:bg-white/[0.04]"
               >
-                <Github size={20} />
-                使用 GitHub 账号登录
+                <Github size={18} />
+                使用 GitHub 登录
               </button>
 
-              <div className="text-center pt-4">
-                <button
-                  onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
-                  className="text-[14px] font-bold text-gray-400 hover:text-[var(--primary-color)] transition-colors"
-                >
-                  {mode === 'login' ? '还没有账号？立即创建' : '已有账号？返回登录'}
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => setMode(mode === "login" ? "register" : "login")}
+                className="mt-6 w-full text-center text-sm font-bold text-gray-400"
+              >
+                {mode === "login" ? "没有账号？去注册" : "已有账号？去登录"}
+              </button>
             </>
           )}
         </div>
-
-        <div className="mt-8 text-center text-[12px] text-gray-400 font-bold opacity-50 px-8">
-          注册即代表您同意我们的《服务条款》与《隐私政策》。数据将通过 Supabase 加密存储在云端，实现多端实时同步。
-        </div>
       </div>
+    </div>
+  );
+}
+
+function Field({
+  icon,
+  value,
+  onChange,
+  placeholder,
+  type,
+}: {
+  icon: React.ReactNode;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  type: string;
+}) {
+  return (
+    <div className="relative">
+      <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">{icon}</div>
+      <input
+        type={type}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        required
+        className="w-full rounded-[20px] border border-transparent bg-black/[0.03] py-4 pl-12 pr-4 text-sm font-bold outline-none transition-all focus:border-[var(--primary-color)]/30 dark:bg-white/[0.04]"
+      />
     </div>
   );
 }

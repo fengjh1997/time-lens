@@ -1,7 +1,7 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles } from "lucide-react";
+import { motion } from "framer-motion";
+import { BatteryCharging, Zap } from "lucide-react";
 
 interface ChargingOverlayProps {
   progress: number;
@@ -9,87 +9,69 @@ interface ChargingOverlayProps {
   isComplete: boolean;
 }
 
-export default function ChargingOverlay({ progress, score, isComplete }: ChargingOverlayProps) {
+export default function ChargingOverlay({
+  progress,
+  score,
+  isComplete,
+}: ChargingOverlayProps) {
   return (
-    <div className="absolute inset-0 z-30 pointer-events-none flex items-center justify-center overflow-hidden rounded-inherit">
-      {/* Background Glow */}
-      <motion.div 
+    <div className="absolute inset-0 z-30 pointer-events-none overflow-hidden rounded-inherit">
+      <motion.div
         initial={{ opacity: 0 }}
-        animate={{ opacity: progress * 0.4 }}
-        className="absolute inset-0 bg-[var(--primary-color)] mix-blend-overlay"
+        animate={{ opacity: 0.14 + progress * 0.3 }}
+        className="absolute inset-0 bg-[var(--primary-color)]"
       />
 
-      {/* Growing Ring */}
-      <svg className="w-12 h-12 sm:w-16 sm:h-16 -rotate-90 scale-150 sm:scale-100">
-        <circle
-          cx="50%"
-          cy="50%"
-          r="38%"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="4"
-          className="text-white/10"
-        />
-        <motion.circle
-          cx="50%"
-          cy="50%"
-          r="38%"
-          fill="none"
-          stroke="var(--primary-color)"
-          strokeWidth="4"
-          strokeDasharray="100"
-          initial={{ strokeDashoffset: 100 }}
-          animate={{ strokeDashoffset: 100 - (progress * 100) }}
-          transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          strokeLinecap="round"
-          className="drop-shadow-[0_0_8px_var(--primary-glow)]"
-        />
-      </svg>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <svg className="h-14 w-14 -rotate-90 sm:h-16 sm:w-16">
+          <circle
+            cx="50%"
+            cy="50%"
+            r="38%"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="4"
+            className="text-white/15"
+          />
+          <motion.circle
+            cx="50%"
+            cy="50%"
+            r="38%"
+            fill="none"
+            stroke="white"
+            strokeWidth="4"
+            strokeDasharray="100"
+            animate={{ strokeDashoffset: 100 - progress * 100 }}
+            strokeLinecap="round"
+          />
+        </svg>
 
-      {/* Score Text/Hint */}
-      <AnimatePresence>
-        {score > 0 && (
-          <motion.div
-            initial={{ scale: 0.5, opacity: 0, y: 10 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 1.5, opacity: 0 }}
-            className="absolute bottom-2 flex flex-col items-center"
-          >
-            <span className="text-[10px] font-black text-white uppercase tracking-tighter drop-shadow-md">
-              {score === 1 ? "汇聚完成" : "能量汇聚中"}
-            </span>
-            <span className="text-sm font-black text-white drop-shadow-md">{score.toFixed(2)}</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
+        <div className="absolute flex flex-col items-center justify-center gap-1 text-white">
+          <BatteryCharging size={22} strokeWidth={2.5} />
+          {score > 0 && <span className="text-[11px] font-black tabular-nums">{score.toFixed(2)}</span>}
+        </div>
+      </div>
 
-      {/* Starburst Particles on Complete */}
-      <AnimatePresence>
-        {isComplete && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 flex items-center justify-center"
-          >
-            {[...Array(8)].map((_, i) => (
-              <motion.div
-                key={i}
-                initial={{ transform: `rotate(${i * 45}deg) translateY(0px)`, opacity: 1, scale: 1 }}
-                animate={{ transform: `rotate(${i * 45}deg) translateY(40px)`, opacity: 0, scale: 0 }}
-                transition={{ duration: 0.6, ease: "easeOut" }}
-                className="absolute w-1 h-3 bg-white rounded-full"
-              />
-            ))}
+      {isComplete && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          {[...Array(6)].map((_, index) => (
             <motion.div
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: [1, 2, 0], opacity: [1, 0.5, 0] }}
-              transition={{ duration: 0.5 }}
-              className="absolute w-20 h-20 bg-white/30 rounded-full blur-xl"
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
+              key={index}
+              initial={{ opacity: 1, scale: 0.8, x: 0, y: 0 }}
+              animate={{
+                opacity: 0,
+                scale: 1.4,
+                x: Math.cos((index * Math.PI) / 3) * 36,
+                y: Math.sin((index * Math.PI) / 3) * 36,
+              }}
+              transition={{ duration: 0.45, ease: "easeOut" }}
+              className="absolute"
+            >
+              <Zap size={16} className="text-white" fill="currentColor" />
+            </motion.div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

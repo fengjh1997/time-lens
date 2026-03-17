@@ -1,50 +1,77 @@
-# Time Lens (星辰透镜) ✦
+# Time Lens
 
-捕捉每一刻的心流状态 — 为 iOS 和桌面打造的沉浸式 PWA 时间管理系统。
+Time Lens is a day/week-first planning PWA focused on energy, rhythm, and reflection rather than simple task lists.
 
-> **心流能量，而非仅仅是时间。** Time Lens 记录的不是任务，而是你的生命能效。
+Current version: `v6.8.0`
 
----
+## What It Is
 
-## 📱 PWA (移动端优先)
-本项目已完全适配 PWA 标准，针对 **iOS 设备** 进行了深度优化：
-- **离线运行**：即使没有网络，记录依然精准留存。
-- **独立桌面体验**：支持“添加到主屏幕”，享受全屏沉浸式交互。
-- **本地优先架构**：数据默认存储在本地，隐私有保障；支持手动开启云端同步。
+Time Lens treats each time block as a small record of focus quality.
+The product centers around two primary canvases:
 
-## ✨ 核心功能清单
+- `Day View`: a detailed vertical timeline for single-day review and edits
+- `Week View`: a wide weekly planning board for structure, momentum, and comparison
 
-### 1. 维度探索系统 (Dimension Exploration)
-- **今日焦点 (Day View)**：垂直时间轴，精准捕捉 15 分钟级的能耗分布。
-- **一周规划 (Week View)**：全景视野，支持任务预设与历史能效热力图回顾。
-- **全景热力图**：月/年视图动态热力化，量化生命能效密度。
+Monthly and yearly context still exist, but they now support the week/day flow instead of competing with it.
 
-### 2. 能量采集指标 (Energy Metrics)
-- **星辰评分 (Star Rating)**：0 - 1.0 的四档评分，精准定义每一小时的心流质量。
-- **互动番茄钟**：动态出现的倒计时工具，记录专注的每一刻。
-- **额外增益 (Bonus Time)**：捕捉计划外的闪光点。
+## Core Product Principles
 
-### 3. 本地优先同步 (Controlled Sync)
-- **Supabase 强力驱动**：云端同步作为可选插件存在。
-- **手动双向同步**：用户主动控制数据上云与下发，杜绝数据自动冲突。
-- **身份验证**：支持邮箱与社交账号登录。
+- Day/week views are the main entry points
+- Panorama data should be embedded into operational screens where possible
+- Offline-first interaction comes before cloud sync
+- Cloud sync must reduce overwrite conflicts, not create them
+- Mobile interaction quality is a first-class requirement
 
-### 4. 极致美学设计 (Aesthetic UI)
-- **Super Round**：极致圆润的 UI 符号。
-- **玻璃拟态**：深浅模式切换下的剔透质感。
-- **主题引擎**：琥珀、翡翠、紫罗兰、蔚蓝 四大色彩体系。
+## Key Features
 
-## 🛠️ 技术栈
-- **前端框架**: Next.js 15 (App Router)
-- **状态管理**: Zustand (Persist Middleware)
-- **离线支持**: next-pwa (@ducanh2912/next-pwa)
-- **后端服务**: Supabase (Auth, DB, RLS)
-- **UI & 动效**: Framer Motion, Lucide Icons
+- Day timeline with energy scoring, tags, notes, and bonus blocks
+- Week planning grid with direct scanning across seven days
+- Long-press charging for fast scoring
+- Dedicated drag handle for moving time blocks without gesture conflict
+- Optional notes, optional tags, and manual detail editing on tap
+- Theme color system with synced preferences
+- Offline-first local persistence with optional Supabase sync
 
-## 快速开始
-1. **安装依赖**: `npm install`
-2. **启动开发环境**: `npm run dev`
-3. **开启 PWA**: 构建应用后，通过手机浏览器访问并“添加到主屏幕”。
+## UX Direction In v6.8.0
 
----
-*Time Lens 正在持续进化中...*
+- Removed the need for a persistent sidebar concept
+- Reframed the app around a unified top-level navigation dock
+- Embedded month/year summaries into day/week pages
+- Simplified the visual hierarchy so labels are stronger than reflection text
+- Replaced charging text with icon-based feedback
+- Separated tap, long-press, and drag into distinct interactions
+
+## Tech Stack
+
+- `Next.js 16`
+- `React 19`
+- `TypeScript`
+- `Zustand`
+- `Framer Motion`
+- `Supabase`
+- `next-pwa`
+
+## Local Development
+
+1. Install dependencies: `npm install`
+2. Start dev server: `npm run dev`
+3. Lint: `npm run lint`
+4. Type-check: `npx tsc --noEmit`
+
+## Cloud Sync Notes
+
+Time Lens uses an offline-first model.
+Local state remains the source of immediate interaction, and cloud sync is layered on top.
+
+For full settings and tag-color sync, update the Supabase `settings` table with these fields:
+
+- `show_details_in_week_view`
+- `daily_energy_goal`
+- `weekly_energy_goal`
+- `tags_json`
+
+See [supabase_schema.sql](/G:/vibe-coding/time-lens/supabase_schema.sql).
+
+## Release Notes
+
+Latest release highlights are tracked in [CHANGELOG.md](/G:/vibe-coding/time-lens/CHANGELOG.md).

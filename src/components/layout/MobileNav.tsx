@@ -2,38 +2,37 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Calendar, LayoutDashboard, Settings, Compass, Sun } from "lucide-react";
+import { CalendarDays, ChartColumnBig, Compass, Settings, SunMedium } from "lucide-react";
 
 export default function MobileNav() {
   const pathname = usePathname();
 
   const navItems = [
-    { name: "今日", href: "/day", icon: Sun },
-    { name: "一周", href: "/", icon: Compass },
-    { name: "月度", href: "/month", icon: Calendar },
-    { name: "洞察", href: "/dashboard", icon: LayoutDashboard },
+    { name: "日", href: "/day", icon: SunMedium },
+    { name: "周", href: "/", icon: Compass },
+    { name: "全景", href: "/month", icon: CalendarDays },
+    { name: "数据", href: "/dashboard", icon: ChartColumnBig },
     { name: "设置", href: "/settings", icon: Settings },
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 sm:hidden z-50 bg-[var(--background)] border-t border-[#e5e5e5] dark:border-[#333333] backdrop-blur-xl">
-      <div className="flex items-center justify-around py-2 px-1 safe-bottom">
-        {navItems.map(item => {
+    <nav className="fixed bottom-0 left-0 right-0 sm:hidden z-50 border-t border-[var(--border-color)] glass-panel">
+      <div className="flex items-center justify-around px-2 py-2 safe-bottom">
+        {navItems.map((item) => {
           const isActive = pathname === item.href;
           const Icon = item.icon;
           return (
             <Link
               key={item.name}
               href={item.href}
-              className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-2xl transition-all duration-200 min-w-[48px]
-                ${isActive 
-                  ? 'text-[var(--primary-color)]' 
-                  : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
-                }
-              `}
+              className={`flex min-w-[56px] flex-col items-center gap-1 rounded-2xl px-3 py-2 text-[10px] font-black transition-all ${
+                isActive
+                  ? "bg-[var(--primary-light)] text-[var(--primary-color)]"
+                  : "text-gray-400"
+              }`}
             >
-              <Icon size={22} strokeWidth={isActive ? 2.5 : 2} />
-              <span className={`text-[10px] ${isActive ? 'font-black' : 'font-semibold'}`}>{item.name}</span>
+              <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
+              <span>{item.name}</span>
             </Link>
           );
         })}

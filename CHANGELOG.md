@@ -1,66 +1,72 @@
-# Time Lens (星辰透镜) - 产品开发日志 (Changelog)
+# Time Lens - Changelog
+
+## v6.8.0 (2026-03-17)
+
+### UI/UX restructure
+- Rebuilt the product around day/week operational canvases instead of a sidebar-led navigation model.
+- Added a unified desktop dock and refreshed mobile navigation to match the new structure.
+- Moved monthly and yearly context into day/week summary areas so panorama data supports execution rather than competing with it.
+
+### Interaction improvements
+- Split time block gestures into three clear paths: tap to edit, long-press to charge, drag handle to move.
+- Replaced long-press text overlays with icon-based charging feedback.
+- Stopped long-press from forcing tag selection or reflection entry.
+- Removed default reflection filler text and reduced reflection text emphasis under tag labels.
+- Replaced the broken pomodoro placeholder rendering with clean icon-based counting.
+
+### Sync and state stability
+- Added timestamp-based merge logic for settings and block sync to reduce overwrite conflicts after login or page navigation.
+- Synced theme preferences and tag color changes through a unified settings pipeline.
+- Extended Supabase settings support for `tags_json`, weekly detail preferences, and energy goals.
+
+### Documentation and release maintenance
+- Updated `README.md` to match the current product direction and technical workflow.
+- Rewrote `CHANGELOG.md` into a clean release history format.
+- Bumped project version metadata to `v6.8.0`.
+
+## v6.7.0
+
+### Planning and energy goals
+- Introduced smoother day/week view switching.
+- Added stronger energy-goal presentation and interaction fixes across the main planning surfaces.
+
+## v6.6.0
+
+### Time block interaction baseline
+- Added long-press charging.
+- Added drag-to-move for time blocks.
+- Shifted the default visual emphasis toward the emerald theme direction.
 
 ## v6.5.1 (2026-03-16)
-### 📱 PWA 移动端优化 (PWA Conversion)
-- **iOS 适配**：新增 `manifest.json` 与 PWA 图标，支持 iOS 主屏幕添加，实现全屏独立运行体验。
-- **安全边距**：针对移动端底部操作条优化了 `safe-area-inset-bottom` 适配。
-- **离线支持**：集成 `@ducanh2912/next-pwa`，支持 Service Worker 资源缓存，确保离线可用。
 
-### 💾 离线优先存储架构 (Offline-First & Local Sync)
-- **本地优先逻辑**：所有日常操作优先持久化于本地，不再强制依赖网络。
-- **受控云同步**：
-  - 设置页新增 `cloudSyncEnabled` 开关，由用户自主决定是否开启 Supabase 同步。
-  - 新增“立即手动同步”按钮，避免多设备自动冲突，确保数据所有权回归用户。
-
-### 📚 文档体系大修 (Documentation Overhaul)
-- **README 整合**：合并原 PRD 文档至 README，精简项目入口。
-- **版本归档**：在 `参考/回顾.md` 中建立全量历史快照。
-- **开发规范更新**：在 `DEVELOPMENT_STANDARDS.md` 中确立了 PWA 开发与 Git 强制备份规范。
-
+### PWA and storage
+- Added PWA conversion work for mobile installation and offline behavior.
+- Strengthened local-first storage behavior and controlled cloud sync entry points.
+- Expanded documentation and project maintenance standards.
 
 ## v6.2.0 (2026-03-14)
-### ✨ 交互逻辑深度精简 (Interaction Refined)
-- **RecordModal 重构**：
-  - “心流能量等级”更名为“能量收集”。
-  - 调整组件顺序：能量收集 -> 领域规置 -> 心流记录与感悟。
-  - **动态番茄钟**：番茄钟仅在“当前小时”的时间块内显示，简化非当前时段的记录负担。
-- **实时高亮系统**：
-  - 在“每日焦点”中动态展示当前小时单元格的呼吸边框与发光效果。
-  - 在“一周规划”中为当前时段添加标识性的内发光 Ring。
 
-### 📊 数据可视化体系升级 (Data Mastery)
-- **全景热力图**：月/年视图全面热力化，采用 4 阶动态主色调，精准量化时间投射的密度。
-- **标签能量分析**：Dashboard 新增标签专属分析模块，支持自定义选择标签查看其最近 30 天的每日能量分布。
-
-### 🐞 修复与调优
-- **同步补丁**：修复设置页新增自定义标签后未触发云端推送的 Bug。
-- **暗色美学**：优化设置页“智能标签库”与“数据管护”卡片在深色模式下的背景，消除纯白背景，代之以 theme-aware 的半透明材质。
-- **Auth 优化**：新增注册成功后的“检查邮箱”指引界面，极大提升新手引导体验。
+### Interaction refinement
+- Reworked the record modal flow and simplified current-hour pomodoro behavior.
+- Added stronger current-time highlighting in day and week views.
+- Expanded dashboard analytics and heatmap-based visualization.
 
 ## v6.1.2 (2026-03-14)
-### 🛠️ 文档规范化
-- **文档迁移**：将 `WALKTHROUGH.md` 移动至项目根目录。
-- **技术准则**：在根目录新增 [DEVELOPMENT_STANDARDS.md](file:///g:/vibe-coding/time-lens/DEVELOPMENT_STANDARDS.md)，系统性对齐版本管理、GitHub 推送策略及设计规范。
+
+### Documentation normalization
+- Added and organized development standards documentation.
+- Standardized root-level documentation layout.
 
 ## v6.1.0 (2026-03-14)
-### ✨ UI/UX 深度打磨 (UI Harmony)
-- **视觉风格进化**：暗色模式采用蓝灰调 (#111113) 替代纯黑，大幅提升视觉舒适度与对比度。
-- **全站主题联通**：重构 `StarRating` 与 `WeekGrid` 核心逻辑，心流星星颜色、打卡单元格样式、周末背景及番茄钟 UI 全面与主色调关联。
-- **动态评分变量**：通过 CSS 全局变量实现的动态评分阶梯颜色，确保全站色系 100% 协调。
-- **动效微调**：优化了弹窗与卡片的入场动效，交互更加丝滑。
 
-### 🚀 架构跃迁：云端同步 (Cloud Sync)
-- **Supabase 集成**：完成 Supabase SDK 安装与环境初始化。
-- **多端同步基座**：建立后端 client 通道，为接下来的实时同步奠定基础。
+### Theme and cloud-sync foundation
+- Introduced unified theme-color linkage across rating, week cells, and major UI surfaces.
+- Integrated the Supabase foundation for future multi-device sync.
+- Fixed several dark-mode and visual consistency issues.
 
-### 🐞 修复与优化
-- 修复暗色模式下休眠时段对比度过高的问题。
-- 修复记录模态框中“计划中”按钮颜色固定的缺陷。
+## v6.0.0 (2026-03-14)
 
----
-
-## v6.0.0 (2026-03-14 早期)
-### 🚀 V6.0 全面进化：主题与专注力
-- **动态主题引擎**：引入四大主色调（琥珀、翡翠、紫罗兰、蔚蓝）。
-- **交互式番茄钟**：RecordModal 内置倒计时计时器。
-- **视图极致优化**：休眠时段（23:00-09:00）默认折叠。
+### V6 baseline
+- Added dynamic theme support.
+- Added integrated pomodoro behavior in the record modal.
+- Folded sleep hours by default to improve focus density.
