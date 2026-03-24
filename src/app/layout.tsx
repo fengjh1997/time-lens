@@ -9,13 +9,13 @@ import AuthProvider from "@/components/layout/AuthProvider";
 const outfit = Outfit({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Time Lens",
-  description: "A weekly and daily planning canvas with panoramic context.",
+  title: "TimeFlow | 时流",
+  description: "A fluid time canvas for day, week, month, and year planning.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Time Lens",
+    title: "TimeFlow",
   },
   formatDetection: {
     telephone: false,

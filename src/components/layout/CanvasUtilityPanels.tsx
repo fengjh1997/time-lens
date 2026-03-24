@@ -74,7 +74,7 @@ export default function CanvasUtilityPanels() {
               <div className="flex items-center justify-between px-5 py-4">
                 <div className="inline-flex items-center gap-2 rounded-full bg-[var(--primary-light)] px-3 py-1.5 text-[12px] font-black text-[var(--primary-color)]">
                   {panel === "tags" ? <Tags size={14} /> : <Goal size={14} />}
-                  <span>{panel === "tags" ? "标签" : "目标"}</span>
+                  <span>{panel === "tags" ? "标签系统" : "目标系统"}</span>
                 </div>
                 <button
                   type="button"
@@ -87,6 +87,7 @@ export default function CanvasUtilityPanels() {
 
               {panel === "tags" ? (
                 <div className="space-y-4 px-5 pb-6">
+                  <p className="text-[13px] font-medium text-faint">管理标签名称、emoji 和颜色。这里只是系统入口，不会影响拖拽和长按充能。</p>
                   <div className="flex flex-wrap gap-2">
                     {tags.map((tag) => (
                       <div
@@ -145,8 +146,21 @@ export default function CanvasUtilityPanels() {
                 </div>
               ) : (
                 <div className="space-y-4 px-5 pb-6">
+                  <div className="rounded-[28px] bg-[linear-gradient(135deg,rgba(var(--primary-rgb),0.12),rgba(255,255,255,0.55))] p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-[12px] font-black text-[var(--primary-color)]">目标联动</p>
+                        <h3 className="mt-2 text-xl font-black tracking-[-0.04em]">把今天和本周连成一条节奏线</h3>
+                      </div>
+                      <div className="liquid-ring flex h-16 w-16 items-center justify-center rounded-full bg-[radial-gradient(circle_at_50%_35%,#ffffff_0%,rgba(var(--primary-rgb),0.15)_22%,rgba(var(--primary-rgb),0.9)_62%,rgba(var(--primary-rgb),0.28)_100%)] text-lg font-black text-white">
+                        {Math.round(weekRatio * 100)}%
+                      </div>
+                    </div>
+                  </div>
+
                   <LiquidGoalCard
                     title="今日目标"
+                    helper="先把今天的块走顺"
                     value={todayEnergy}
                     goal={settings.dailyEnergyGoal}
                     ratio={todayRatio}
@@ -154,6 +168,7 @@ export default function CanvasUtilityPanels() {
                   />
                   <LiquidGoalCard
                     title="本周目标"
+                    helper="让七天的势能连续起来"
                     value={weekEnergy}
                     goal={settings.weeklyEnergyGoal}
                     ratio={weekRatio}
@@ -171,12 +186,14 @@ export default function CanvasUtilityPanels() {
 
 function LiquidGoalCard({
   title,
+  helper,
   value,
   goal,
   ratio,
   onChange,
 }: {
   title: string;
+  helper: string;
   value: number;
   goal: number;
   ratio: number;
@@ -184,45 +201,53 @@ function LiquidGoalCard({
 }) {
   return (
     <div className="glass-card overflow-hidden rounded-[26px] p-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-sm font-black">{title}</p>
-          <p className="mt-1 text-[12px] font-medium text-faint">
-            {value.toFixed(1)} / {goal.toFixed(1)}
-          </p>
+          <p className="mt-1 text-[12px] font-medium text-faint">{helper}</p>
         </div>
         <div className="inline-flex items-center gap-2 rounded-full border border-[var(--border-color)] bg-white/50 px-2 py-1 dark:bg-white/[0.06]">
-          {[goal - 1, goal, goal + 1].map((preset, index) => (
-            <button
-              key={`${title}-${index}`}
-              type="button"
-              onClick={() => onChange(Math.max(1, Number(preset.toFixed(1))))}
-              className={`rounded-full px-2 py-1 text-[11px] font-black ${
-                Math.abs(goal - preset) < 0.01 ? "bg-[var(--primary-color)] text-white" : "text-subtle"
-              }`}
-            >
-              {Math.max(1, Number(preset.toFixed(1)))}
-            </button>
-          ))}
+          {[goal - 1, goal, goal + 1].map((preset, index) => {
+            const valuePreset = Math.max(1, Number(preset.toFixed(1)));
+            return (
+              <button
+                key={`${title}-${index}`}
+                type="button"
+                onClick={() => onChange(valuePreset)}
+                className={`rounded-full px-2 py-1 text-[11px] font-black ${
+                  Math.abs(goal - valuePreset) < 0.01 ? "bg-[var(--primary-color)] text-white" : "text-subtle"
+                }`}
+              >
+                {valuePreset}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      <div className="mt-4 overflow-hidden rounded-[999px] border border-[rgba(var(--primary-rgb),0.16)] bg-[rgba(var(--primary-rgb),0.08)] p-1">
-        <div className="relative h-8 overflow-hidden rounded-[999px] bg-white/35 dark:bg-white/[0.06]">
-          <motion.div
-            className="absolute inset-y-0 left-0 rounded-[999px] bg-[linear-gradient(90deg,rgba(var(--primary-rgb),0.55),rgba(var(--primary-rgb),0.92))]"
-            animate={{ width: `${Math.max(8, ratio * 100)}%` }}
-            transition={{ type: "spring", stiffness: 220, damping: 24 }}
-          />
-          <motion.div
-            className="absolute inset-y-1 left-2 rounded-full bg-white/45 blur-sm"
-            animate={{ x: ["0%", "100%", "0%"] }}
-            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-            style={{ width: "32%" }}
-          />
-          <div className="absolute inset-0 flex items-center justify-between px-3 text-[11px] font-black">
-            <span className="text-[var(--foreground)]">液态进度</span>
-            <span className="text-[var(--foreground)]">{Math.round(ratio * 100)}%</span>
+      <div className="mt-4 rounded-[24px] bg-[linear-gradient(135deg,rgba(var(--primary-rgb),0.1),rgba(255,255,255,0.4))] p-4">
+        <div className="mb-3 flex items-end justify-between">
+          <div className="text-3xl font-black tracking-[-0.06em]">{value.toFixed(1)}</div>
+          <div className="text-[12px] font-black text-faint">/ {goal.toFixed(1)}</div>
+        </div>
+
+        <div className="overflow-hidden rounded-[999px] border border-[rgba(var(--primary-rgb),0.16)] bg-[rgba(var(--primary-rgb),0.08)] p-1">
+          <div className="relative h-8 overflow-hidden rounded-[999px] bg-white/35 dark:bg-white/[0.06]">
+            <motion.div
+              className="absolute inset-y-0 left-0 rounded-[999px] bg-[linear-gradient(90deg,rgba(var(--primary-rgb),0.55),rgba(var(--primary-rgb),0.92))]"
+              animate={{ width: `${Math.max(8, ratio * 100)}%` }}
+              transition={{ type: "spring", stiffness: 220, damping: 24 }}
+            />
+            <motion.div
+              className="absolute inset-y-1 left-2 rounded-full bg-white/45 blur-sm"
+              animate={{ x: ["0%", "100%", "0%"] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+              style={{ width: "32%" }}
+            />
+            <div className="absolute inset-0 flex items-center justify-between px-3 text-[11px] font-black">
+              <span className="text-[var(--foreground)]">液态进度</span>
+              <span className="text-[var(--foreground)]">{Math.round(ratio * 100)}%</span>
+            </div>
           </div>
         </div>
       </div>

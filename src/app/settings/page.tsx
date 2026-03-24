@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Check, Cloud, Download, Palette, RefreshCw, Settings2, Tag as TagIcon, Trash2, Upload } from "lucide-react";
+import AppLogoMark from "@/components/layout/AppLogoMark";
 import type { PrimaryColor } from "@/types";
 import { useTimeStore } from "@/store/timeStore";
 import { useAuthStore } from "@/store/authStore";
@@ -61,7 +62,7 @@ export default function SettingsPage() {
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = `time-lens-backup-${new Date().toISOString().split("T")[0]}.json`;
+    anchor.download = `timeflow-backup-${new Date().toISOString().split("T")[0]}.json`;
     document.body.appendChild(anchor);
     anchor.click();
     document.body.removeChild(anchor);
@@ -71,6 +72,23 @@ export default function SettingsPage() {
   return (
     <div className="h-full overflow-y-auto bg-[var(--background)] pb-32 sm:pb-12">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
+        <section className="glass-card-strong rounded-[34px] p-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <AppLogoMark />
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-[0.26em] text-[var(--primary-color)]">TimeFlow</p>
+                <h1 className="mt-2 text-3xl font-black tracking-[-0.06em]">时流 · 系统设置</h1>
+                <p className="mt-2 text-sm font-medium text-faint">在不影响主流程的前提下，统一主题、标签、同步和数据管理。</p>
+              </div>
+            </div>
+
+            <div className="rounded-full bg-[rgba(var(--primary-rgb),0.1)] px-4 py-2 text-[12px] font-black text-[var(--primary-color)]">
+              设置中心
+            </div>
+          </div>
+        </section>
+
         <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
           <section className="glass-card rounded-[28px] p-4">
             <SectionHeader icon={<Palette size={17} />} title="外观" />
@@ -109,14 +127,14 @@ export default function SettingsPage() {
                 onChange={() => syncSettings({ hideSleepTime: !settings.hideSleepTime })}
               />
               <ToggleRow
-                label="周视图说明"
-                description="块内短文"
+                label="周视图显示感悟"
+                description="在时间块里保留短感悟"
                 enabled={settings.showDetailsInWeekView}
                 onChange={() => syncSettings({ showDetailsInWeekView: !settings.showDetailsInWeekView })}
               />
               <ToggleRow
-                label="周视图标签"
-                description="块内标签"
+                label="周视图显示标签"
+                description="块内显示标签信息"
                 enabled={settings.showTagNamesInWeekView}
                 onChange={() => syncSettings({ showTagNamesInWeekView: !settings.showTagNamesInWeekView })}
               />
@@ -128,8 +146,8 @@ export default function SettingsPage() {
 
             <div className="mt-4 space-y-4">
               <ToggleRow
-                label="云同步"
-                description={user ? "自动同步" : "需先登录"}
+                label="云端同步"
+                description={user ? "已登录后自动同步" : "需要先登录后启用"}
                 enabled={!!settings.cloudSyncEnabled}
                 onChange={() => syncSettings({ cloudSyncEnabled: !settings.cloudSyncEnabled })}
               />
@@ -145,13 +163,13 @@ export default function SettingsPage() {
                     立即同步
                   </button>
                   <p className="text-[12px] font-medium text-faint">
-                    {lastSyncedAt ? new Date(lastSyncedAt).toLocaleString() : "尚未同步"}
+                    {lastSyncedAt ? `最近同步：${new Date(lastSyncedAt).toLocaleString()}` : "尚未同步"}
                   </p>
                 </>
               ) : (
                 <Link href="/auth" className="inline-flex items-center gap-2 rounded-full bg-[var(--primary-color)] px-4 py-2.5 text-[13px] font-black text-white">
                   <Cloud size={14} />
-                  登录
+                  登录账号
                 </Link>
               )}
             </div>
@@ -159,7 +177,7 @@ export default function SettingsPage() {
         </div>
 
         <section className="glass-card rounded-[28px] p-4">
-          <SectionHeader icon={<TagIcon size={17} />} title="标签" />
+          <SectionHeader icon={<TagIcon size={17} />} title="标签系统" />
 
           <div className="mt-4 space-y-2">
             {tags.map((tag) => (
@@ -226,7 +244,7 @@ export default function SettingsPage() {
         </section>
 
         <section className="glass-card rounded-[28px] p-4">
-          <SectionHeader icon={<Settings2 size={17} />} title="数据" />
+          <SectionHeader icon={<Settings2 size={17} />} title="数据管理" />
 
           <div className="mt-4 grid gap-2 sm:grid-cols-3">
             <button type="button" onClick={handleExport} className="inline-flex items-center justify-center gap-2 rounded-[16px] border border-[var(--border-color)] px-4 py-3 text-[13px] font-black">

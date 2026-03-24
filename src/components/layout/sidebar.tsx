@@ -51,8 +51,8 @@ export default function Sidebar() {
           <Star size={22} color="white" fill="white" />
         </div>
         <div>
-          <h1 className="font-black text-xl tracking-tight leading-none italic">Time Lens</h1>
-          <span className="text-[10px] font-black tracking-widest text-[var(--primary-color)] uppercase">Star Energy</span>
+          <h1 className="font-black text-xl tracking-tight leading-none italic">TimeFlow</h1>
+          <span className="text-[10px] font-black tracking-widest text-[var(--primary-color)] uppercase">Rhythm Energy</span>
         </div>
       </div>
 

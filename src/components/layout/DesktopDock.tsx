@@ -6,7 +6,7 @@ import { ChartColumnBig, Compass, Settings } from "lucide-react";
 import AppLogoMark from "@/components/layout/AppLogoMark";
 
 const navItems = [
-  { href: "/", label: "主画布", icon: Compass, matches: ["/", "/day", "/month"] },
+  { href: "/", label: "画布", icon: Compass, matches: ["/", "/day", "/month"] },
   { href: "/dashboard", label: "数据", icon: ChartColumnBig, matches: ["/dashboard"] },
   { href: "/settings", label: "设置", icon: Settings, matches: ["/settings", "/auth"] },
 ];
@@ -20,8 +20,8 @@ export default function DesktopDock() {
         <div className="flex items-center gap-3">
           <AppLogoMark />
           <div>
-            <p className="text-[11px] font-black uppercase tracking-[0.32em] text-[var(--primary-color)]">Time Lens</p>
-            <h1 className="mt-1 text-[20px] font-black tracking-tight">液态聚焦画布</h1>
+            <p className="text-[11px] font-black uppercase tracking-[0.32em] text-[var(--primary-color)]">TimeFlow</p>
+            <h1 className="mt-1 text-[20px] font-black tracking-tight">时流 · 节奏画布</h1>
           </div>
         </div>
 

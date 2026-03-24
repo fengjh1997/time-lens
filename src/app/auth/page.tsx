@@ -69,84 +69,83 @@ export default function AuthPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="glass-modal relative overflow-hidden rounded-[42px] p-8 sm:p-10">
-          <div className="absolute right-0 top-0 p-8 opacity-5">
-            <Sparkles size={120} className="text-[var(--primary-color)]" />
+      <div className="relative w-full max-w-md overflow-hidden rounded-[42px] border border-white/55 bg-[linear-gradient(180deg,rgba(255,255,255,0.85),rgba(255,255,255,0.72))] p-8 shadow-[var(--shadow-lg)] backdrop-blur-[30px] sm:p-10">
+        <div className="pointer-events-none absolute left-1/2 top-[34%] h-72 w-72 -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(var(--primary-rgb),0.24)_0%,rgba(var(--primary-rgb),0.1)_34%,transparent_72%)]" />
+        <div className="pointer-events-none absolute right-[-28px] top-[-20px] h-40 w-40 rounded-full bg-[radial-gradient(circle,rgba(117,213,255,0.2)_0%,rgba(117,213,255,0.08)_36%,transparent_72%)]" />
+
+        <div className="relative z-10 text-center">
+          <div className="mb-4 inline-flex rounded-[26px] bg-[var(--primary-light)] p-4 text-[var(--primary-color)]">
+            <Sparkles size={28} />
           </div>
-
-          <div className="text-center">
-            <div className="mb-4 inline-flex rounded-[26px] bg-[var(--primary-light)] p-4 text-[var(--primary-color)]">
-              <Sparkles size={28} />
-            </div>
-            <h1 className="text-3xl font-black">{regSuccess ? "查收确认邮件" : mode === "login" ? "欢迎回来" : "创建账号"}</h1>
-            <p className="mt-2 text-[12px] font-bold uppercase tracking-[0.22em] text-faint">
-              {regSuccess ? "check your inbox" : "time lens cloud sync"}
-            </p>
-          </div>
-
-          {regSuccess ? (
-            <div className="mt-8 space-y-4 text-center">
-              <div className="rounded-[28px] border border-emerald-500/20 bg-emerald-50 p-5 text-sm font-medium text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-300">
-                已向 {email} 发送确认邮件，验证后再回来登录即可。
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setMode("login");
-                  setRegSuccess(false);
-                }}
-                className="w-full rounded-[24px] bg-[var(--primary-color)] px-5 py-4 text-sm font-black text-white shadow-lg shadow-[var(--primary-glow)]"
-              >
-                返回登录
-              </button>
-            </div>
-          ) : (
-            <>
-              <form onSubmit={handleAuth} className="mt-8 space-y-4">
-                {mode === "register" && (
-                  <Field icon={<UserIcon size={18} />} value={fullName} onChange={setFullName} placeholder="昵称" type="text" />
-                )}
-                <Field icon={<Mail size={18} />} value={email} onChange={setEmail} placeholder="邮箱" type="email" />
-                <Field icon={<Lock size={18} />} value={password} onChange={setPassword} placeholder="密码" type="password" />
-
-                {error && <div className="rounded-[18px] bg-red-50 px-4 py-3 text-sm font-medium text-red-500 dark:bg-red-950/20">{error}</div>}
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex w-full items-center justify-center gap-2 rounded-[24px] bg-[var(--primary-color)] px-5 py-4 text-sm font-black text-white shadow-lg shadow-[var(--primary-glow)]"
-                >
-                  {loading ? <Loader2 size={18} className="animate-spin" /> : mode === "login" ? "登录" : "注册"}
-                  {!loading && <ArrowRight size={18} />}
-                </button>
-              </form>
-
-              <div className="my-6 flex items-center gap-3 text-[11px] font-black uppercase tracking-[0.22em] text-faint">
-                <div className="h-px flex-1 bg-[var(--border-color)]" />
-                <span>or</span>
-                <div className="h-px flex-1 bg-[var(--border-color)]" />
-              </div>
-
-              <button
-                type="button"
-                onClick={handleGithubLogin}
-                className="flex w-full items-center justify-center gap-3 rounded-[24px] border border-[var(--border-color)] bg-black/[0.03] px-5 py-4 text-sm font-black dark:bg-white/[0.04]"
-              >
-                <Github size={18} />
-                使用 GitHub 登录
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setMode(mode === "login" ? "register" : "login")}
-                className="mt-6 w-full text-center text-sm font-bold text-faint"
-              >
-                {mode === "login" ? "没有账号？去注册" : "已有账号？去登录"}
-              </button>
-            </>
-          )}
+          <h1 className="text-3xl font-black tracking-[-0.06em]">
+            {regSuccess ? "查收确认邮件" : mode === "login" ? "继续进入时流" : "创建 TimeFlow 账号"}
+          </h1>
+          <p className="mt-2 text-[12px] font-bold uppercase tracking-[0.22em] text-faint">
+            {regSuccess ? "check your inbox" : "timeflow cloud sync"}
+          </p>
         </div>
+
+        {regSuccess ? (
+          <div className="relative z-10 mt-8 space-y-4 text-center">
+            <div className="rounded-[28px] border border-emerald-500/20 bg-emerald-50 p-5 text-sm font-medium text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-300">
+              已向 {email} 发送确认邮件，验证后再回来登录即可。
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setMode("login");
+                setRegSuccess(false);
+              }}
+              className="w-full rounded-[24px] bg-[var(--primary-color)] px-5 py-4 text-sm font-black text-white shadow-lg shadow-[var(--primary-glow)]"
+            >
+              返回登录
+            </button>
+          </div>
+        ) : (
+          <>
+            <form onSubmit={handleAuth} className="relative z-10 mt-8 space-y-4">
+              {mode === "register" && (
+                <Field icon={<UserIcon size={18} />} value={fullName} onChange={setFullName} placeholder="昵称" type="text" />
+              )}
+              <Field icon={<Mail size={18} />} value={email} onChange={setEmail} placeholder="邮箱" type="email" />
+              <Field icon={<Lock size={18} />} value={password} onChange={setPassword} placeholder="密码" type="password" />
+
+              {error && <div className="rounded-[18px] bg-red-50 px-4 py-3 text-sm font-medium text-red-500 dark:bg-red-950/20">{error}</div>}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex w-full items-center justify-center gap-2 rounded-[24px] bg-[var(--primary-color)] px-5 py-4 text-sm font-black text-white shadow-lg shadow-[var(--primary-glow)]"
+              >
+                {loading ? <Loader2 size={18} className="animate-spin" /> : mode === "login" ? "登录" : "注册"}
+                {!loading && <ArrowRight size={18} />}
+              </button>
+            </form>
+
+            <div className="relative z-10 my-6 flex items-center gap-3 text-[11px] font-black uppercase tracking-[0.22em] text-faint">
+              <div className="h-px flex-1 bg-[var(--border-color)]" />
+              <span>or</span>
+              <div className="h-px flex-1 bg-[var(--border-color)]" />
+            </div>
+
+            <button
+              type="button"
+              onClick={handleGithubLogin}
+              className="relative z-10 flex w-full items-center justify-center gap-3 rounded-[24px] border border-[var(--border-color)] bg-black/[0.03] px-5 py-4 text-sm font-black dark:bg-white/[0.04]"
+            >
+              <Github size={18} />
+              使用 GitHub 登录
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setMode(mode === "login" ? "register" : "login")}
+              className="relative z-10 mt-6 w-full text-center text-sm font-bold text-faint"
+            >
+              {mode === "login" ? "没有账号？去注册" : "已有账号？去登录"}
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

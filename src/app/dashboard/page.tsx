@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { ArrowUpRight, CircleGauge, Clock3, Layers3, Sparkles, Target, TrendingUp } from "lucide-react";
+import AppLogoMark from "@/components/layout/AppLogoMark";
 import { SCORE_ENERGY, useTimeStore } from "@/store/timeStore";
 
 export default function DashboardPage() {
@@ -27,12 +28,14 @@ export default function DashboardPage() {
     return { hour, energy };
   });
 
-  const tagMap = tags.map((tag) => ({
-    ...tag,
-    energy: completedBlocks
-      .filter((block) => block.tagId === tag.id)
-      .reduce((sum, block) => sum + SCORE_ENERGY[block.score], 0),
-  })).sort((left, right) => right.energy - left.energy);
+  const tagMap = tags
+    .map((tag) => ({
+      ...tag,
+      energy: completedBlocks
+        .filter((block) => block.tagId === tag.id)
+        .reduce((sum, block) => sum + SCORE_ENERGY[block.score], 0),
+    }))
+    .sort((left, right) => right.energy - left.energy);
 
   const totalEnergy = completedBlocks.reduce((sum, block) => sum + SCORE_ENERGY[block.score], 0);
   const bestHour = hourly.reduce((best, current) => (current.energy > best.energy ? current : best), hourly[0]);
@@ -40,28 +43,41 @@ export default function DashboardPage() {
 
   return (
     <div className="h-full overflow-y-auto bg-[var(--background)] pb-32 sm:pb-10">
-      <div className="mx-auto grid max-w-6xl gap-4 px-4 py-4 sm:px-6 sm:py-5 lg:grid-cols-[1.2fr_0.8fr]">
+      <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
         <section className="glass-card-strong rounded-[34px] p-5">
-          <div className="flex items-center justify-between">
-            <div className="inline-flex items-center gap-2 rounded-full bg-[var(--primary-light)] px-3 py-1.5 text-[12px] font-black text-[var(--primary-color)]">
-              <Sparkles size={14} />
-              洞察
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <AppLogoMark />
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-[0.26em] text-[var(--primary-color)]">TimeFlow</p>
+                <h1 className="mt-2 text-3xl font-black tracking-[-0.06em]">时流 · 数据洞察</h1>
+                <p className="mt-2 text-sm font-medium text-faint">把最近的能量走势、标签分布和高光时段收成一张更清晰的节奏图。</p>
+              </div>
             </div>
-            <ArrowUpRight size={16} className="text-faint" />
+
+            <div className="rounded-full bg-[rgba(var(--primary-rgb),0.1)] px-4 py-2 text-[12px] font-black text-[var(--primary-color)]">
+              最近 7 天
+            </div>
           </div>
 
           <div className="mt-5 grid gap-3 sm:grid-cols-3">
             <MetricTile icon={<CircleGauge size={16} />} label="总能量" value={totalEnergy.toFixed(settings.decimalPlaces)} />
-            <MetricTile icon={<Clock3 size={16} />} label="强势时段" value={`${String(bestHour.hour).padStart(2, "0")}:00`} />
+            <MetricTile icon={<Clock3 size={16} />} label="最强时段" value={`${String(bestHour.hour).padStart(2, "0")}:00`} />
             <MetricTile icon={<Target size={16} />} label="高光日" value={strongestDay?.date || "--"} />
           </div>
+        </section>
 
-          <div className="mt-5 rounded-[28px] border border-[var(--border-color)] p-4">
-            <div className="mb-4 flex items-center gap-2">
-              <TrendingUp size={16} className="text-[var(--primary-color)]" />
-              <span className="text-sm font-black">近 7 天节奏</span>
+        <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+          <section className="glass-card rounded-[32px] p-5">
+            <div className="mb-4 flex items-center justify-between">
+              <div className="inline-flex items-center gap-2 rounded-full bg-[var(--primary-light)] px-3 py-1.5 text-[12px] font-black text-[var(--primary-color)]">
+                <TrendingUp size={14} />
+                近 7 天节奏
+              </div>
+              <ArrowUpRight size={16} className="text-faint" />
             </div>
-            <div className="flex h-48 items-end gap-3">
+
+            <div className="flex h-56 items-end gap-3 rounded-[28px] bg-[rgba(255,255,255,0.36)] p-4 dark:bg-white/[0.03]">
               {last7Days.map((day) => {
                 const height = Math.max(16, Math.abs(day.energy) * 28);
                 return (
@@ -69,7 +85,7 @@ export default function DashboardPage() {
                     <div className="text-[11px] font-black text-faint">{day.date}</div>
                     <div className="flex w-full flex-1 items-end rounded-[24px] bg-black/[0.03] p-1 dark:bg-white/[0.04]">
                       <div
-                        className="w-full rounded-[20px] bg-[var(--primary-color)]"
+                        className="w-full rounded-[20px] bg-[linear-gradient(180deg,rgba(var(--primary-rgb),0.65),rgba(var(--primary-rgb),0.95))]"
                         style={{ height, opacity: day.energy === 0 ? 0.18 : 0.95 }}
                       />
                     </div>
@@ -78,11 +94,24 @@ export default function DashboardPage() {
                 );
               })}
             </div>
-          </div>
-        </section>
+          </section>
 
-        <section className="grid gap-4">
-          <div className="glass-card rounded-[30px] p-4">
+          <section className="glass-card rounded-[32px] p-5">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-[var(--primary-light)] px-3 py-1.5 text-[12px] font-black text-[var(--primary-color)]">
+              <Sparkles size={14} />
+              洞察摘要
+            </div>
+
+            <div className="grid gap-3">
+              <InsightCard title="高效提醒" value={`${String(bestHour.hour).padStart(2, "0")}:00 - ${String(bestHour.hour + 1).padStart(2, "0")}:00`} helper="这段时间最适合安排深度工作。" />
+              <InsightCard title="当前判断" value={totalEnergy >= 0 ? "整体向上" : "需要回调"} helper="你的时间块节奏正在慢慢形成自己的惯性。" />
+              <InsightCard title="标签热点" value={tagMap[0] ? `${tagMap[0].emoji} ${tagMap[0].name}` : "暂无"} helper="目前最强的主题方向。"/>
+            </div>
+          </section>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
+          <section className="glass-card rounded-[30px] p-4">
             <div className="mb-4 flex items-center gap-2">
               <Layers3 size={16} className="text-[var(--primary-color)]" />
               <span className="text-sm font-black">标签能量</span>
@@ -109,9 +138,9 @@ export default function DashboardPage() {
                 </div>
               ))}
             </div>
-          </div>
+          </section>
 
-          <div className="glass-card rounded-[30px] p-4">
+          <section className="glass-card rounded-[30px] p-4">
             <div className="mb-4 flex items-center gap-2">
               <Clock3 size={16} className="text-[var(--primary-color)]" />
               <span className="text-sm font-black">24 小时分布</span>
@@ -133,8 +162,8 @@ export default function DashboardPage() {
                 </div>
               ))}
             </div>
-          </div>
-        </section>
+          </section>
+        </div>
       </div>
     </div>
   );
@@ -154,6 +183,16 @@ function MetricTile({
       <div className="inline-flex rounded-[14px] bg-[var(--primary-light)] p-2 text-[var(--primary-color)]">{icon}</div>
       <p className="mt-3 text-[11px] font-black uppercase tracking-[0.16em] text-faint">{label}</p>
       <p className="mt-1 text-2xl font-black">{value}</p>
+    </div>
+  );
+}
+
+function InsightCard({ title, value, helper }: { title: string; value: string; helper: string }) {
+  return (
+    <div className="rounded-[24px] border border-[var(--border-color)] bg-black/[0.03] p-4 dark:bg-white/[0.04]">
+      <p className="text-[11px] font-black uppercase tracking-[0.16em] text-faint">{title}</p>
+      <p className="mt-2 text-xl font-black tracking-[-0.04em]">{value}</p>
+      <p className="mt-2 text-[13px] font-medium text-faint">{helper}</p>
     </div>
   );
 }

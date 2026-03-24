@@ -2,13 +2,11 @@
 
 import { Suspense, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import DayGrid from "@/components/grid/DayGrid";
 import WeekGrid from "@/components/grid/WeekGrid";
-import FocusScopeSwitcher from "@/components/layout/FocusScopeSwitcher";
-import AppLogoMark from "@/components/layout/AppLogoMark";
-import CanvasUtilityPanels from "@/components/layout/CanvasUtilityPanels";
+import CanvasTopBar from "@/components/layout/CanvasTopBar";
+import { useTimeStore } from "@/store/timeStore";
 
 type TimeView = "day" | "week";
 
@@ -24,6 +22,7 @@ function getMonday(date: Date) {
 }
 
 function HomeContent() {
+  const { getDayEnergy, getWeekEnergy, settings } = useTimeStore();
   const searchParams = useSearchParams();
   const router = useRouter();
   const currentView = (searchParams.get("view") as TimeView) || "week";
@@ -50,41 +49,20 @@ function HomeContent() {
     router.replace(`/?view=${nextView}&offset=${nextOffset}`);
   };
 
+  const statusLabel =
+    view === "day"
+      ? `今日 ${getDayEnergy(formatDate(targetDate)).toFixed(settings.decimalPlaces)}`
+      : `本周 ${getWeekEnergy(weekDates).toFixed(settings.decimalPlaces)}`;
+
   return (
     <div className="flex h-full flex-col bg-[var(--background)]">
-      <header className="sticky top-0 z-30 px-3 pt-3 sm:px-6">
-        <div className="glass-panel flex items-center justify-between gap-2 rounded-[28px] px-3 py-3 sm:px-4">
-          <AppLogoMark compact />
-          <FocusScopeSwitcher />
-          <CanvasUtilityPanels />
-          <div className="glass-card flex items-center gap-1 rounded-full p-1">
-            <button
-              type="button"
-              onClick={() => syncRoute(view, offset - 1)}
-              className="rounded-full p-2 text-subtle hover:bg-white/40 dark:hover:bg-white/[0.06]"
-              aria-label="上一段"
-            >
-              <ChevronLeft size={16} />
-            </button>
-            <button
-              type="button"
-              onClick={() => syncRoute(view, 0)}
-              className="rounded-full p-2 text-subtle hover:bg-white/40 dark:hover:bg-white/[0.06]"
-              aria-label="回到当前"
-            >
-              <div className="h-2.5 w-2.5 rounded-full bg-[var(--primary-color)]" />
-            </button>
-            <button
-              type="button"
-              onClick={() => syncRoute(view, offset + 1)}
-              className="rounded-full p-2 text-subtle hover:bg-white/40 dark:hover:bg-white/[0.06]"
-              aria-label="下一段"
-            >
-              <ChevronRight size={16} />
-            </button>
-          </div>
-        </div>
-      </header>
+      <CanvasTopBar
+        subtitle={view === "day" ? "时流 · Today / Flow Detail" : "时流 · Week / Motion Canvas"}
+        statusLabel={statusLabel}
+        onPrev={() => syncRoute(view, offset - 1)}
+        onNext={() => syncRoute(view, offset + 1)}
+        onReset={() => syncRoute(view, 0)}
+      />
 
       <div className="flex-1 overflow-hidden">
         <AnimatePresence mode="wait">
