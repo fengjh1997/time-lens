@@ -2,7 +2,19 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Check, Cloud, Download, Palette, RefreshCw, Settings2, Tag as TagIcon, Trash2, Upload } from "lucide-react";
+import {
+  Check,
+  Cloud,
+  Download,
+  FolderKanban,
+  Palette,
+  RefreshCw,
+  Settings2,
+  Sparkles,
+  Tags,
+  Trash2,
+  Upload,
+} from "lucide-react";
 import AppLogoMark from "@/components/layout/AppLogoMark";
 import type { PrimaryColor } from "@/types";
 import { useTimeStore } from "@/store/timeStore";
@@ -17,43 +29,13 @@ const PRIMARY_COLORS: Array<{ id: PrimaryColor; color: string; name: string }> =
 ];
 
 export default function SettingsPage() {
-  const {
-    tags,
-    addTag,
-    removeTag,
-    updateTag,
-    settings,
-    updateSettings,
-    exportData,
-    importData,
-    clearAllData,
-    isSyncing,
-    lastSyncedAt,
-  } = useTimeStore();
+  const { settings, updateSettings, exportData, importData, clearAllData, isSyncing, lastSyncedAt } = useTimeStore();
   const { user } = useAuthStore();
   const { manualSync, pushSettings } = useSync();
-
-  const [newTagName, setNewTagName] = useState("");
-  const [newTagEmoji, setNewTagEmoji] = useState("✨");
-  const [newTagColor, setNewTagColor] = useState("#10b981");
+  const [importError, setImportError] = useState<string | null>(null);
 
   const syncSettings = (partial: Parameters<typeof updateSettings>[0]) => {
     updateSettings(partial);
-    window.setTimeout(() => pushSettings(), 50);
-  };
-
-  const handleAddTag = () => {
-    if (!newTagName.trim()) return;
-    addTag({
-      id: `${Date.now()}`,
-      name: newTagName.trim(),
-      emoji: newTagEmoji || "✨",
-      color: newTagColor,
-      updatedAt: new Date().toISOString(),
-    });
-    setNewTagName("");
-    setNewTagEmoji("✨");
-    setNewTagColor("#10b981");
     window.setTimeout(() => pushSettings(), 50);
   };
 
@@ -77,17 +59,23 @@ export default function SettingsPage() {
             <div className="flex items-center gap-4">
               <AppLogoMark />
               <div>
-                <p className="text-[11px] font-black uppercase tracking-[0.26em] text-[var(--primary-color)]">TimeFlow</p>
-                <h1 className="mt-2 text-3xl font-black tracking-[-0.06em]">时流 · 系统设置</h1>
-                <p className="mt-2 text-sm font-medium text-faint">在不影响主流程的前提下，统一主题、标签、同步和数据管理。</p>
+                <p className="text-[11px] font-black uppercase tracking-[0.26em] text-[var(--primary-color)]">More</p>
+                <h1 className="mt-2 text-3xl font-black tracking-[-0.06em]">更多</h1>
+                <p className="mt-2 text-sm font-medium text-faint">系统设置、同步、数据备份和扩展入口都放在这里，标签与趋势已经拆成独立系统。</p>
               </div>
             </div>
 
             <div className="rounded-full bg-[rgba(var(--primary-rgb),0.1)] px-4 py-2 text-[12px] font-black text-[var(--primary-color)]">
-              设置中心
+              TimeFlow
             </div>
           </div>
         </section>
+
+        <div className="grid gap-4 sm:grid-cols-3">
+          <QuickLinkCard href="/tags" icon={<Tags size={16} />} title="标签管理" description="编辑标签并查看使用趋势" />
+          <QuickLinkCard href="/dashboard?tab=goals" icon={<FolderKanban size={16} />} title="目标追踪" description="设置结构目标和缺口提醒" />
+          <QuickLinkCard href="/auth" icon={<Cloud size={16} />} title={user ? "账户与同步" : "登录云同步"} description={user ? "管理当前账号和同步状态" : "登录后可启用云同步"} />
+        </div>
 
         <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
           <section className="glass-card rounded-[28px] p-4">
@@ -133,8 +121,8 @@ export default function SettingsPage() {
                 onChange={() => syncSettings({ showDetailsInWeekView: !settings.showDetailsInWeekView })}
               />
               <ToggleRow
-                label="周视图显示标签"
-                description="块内显示标签信息"
+                label="周视图显示标签名"
+                description="默认以 emoji 为主，必要时显示名称"
                 enabled={settings.showTagNamesInWeekView}
                 onChange={() => syncSettings({ showTagNamesInWeekView: !settings.showTagNamesInWeekView })}
               />
@@ -147,7 +135,7 @@ export default function SettingsPage() {
             <div className="mt-4 space-y-4">
               <ToggleRow
                 label="云端同步"
-                description={user ? "已登录后自动同步" : "需要先登录后启用"}
+                description={user ? "登录后自动同步标签、设置和时间块" : "需要先登录后启用"}
                 enabled={!!settings.cloudSyncEnabled}
                 onChange={() => syncSettings({ cloudSyncEnabled: !settings.cloudSyncEnabled })}
               />
@@ -177,69 +165,10 @@ export default function SettingsPage() {
         </div>
 
         <section className="glass-card rounded-[28px] p-4">
-          <SectionHeader icon={<TagIcon size={17} />} title="标签系统" />
-
-          <div className="mt-4 space-y-2">
-            {tags.map((tag) => (
-              <div key={tag.id} className="grid grid-cols-[36px_1fr_30px] items-center gap-2 rounded-[16px] border border-[var(--border-color)] px-2.5 py-2">
-                <input
-                  value={tag.emoji}
-                  onChange={(event) => updateTag({ ...tag, emoji: event.target.value || "✨", updatedAt: new Date().toISOString() })}
-                  onBlur={() => pushSettings()}
-                  className="h-9 w-9 rounded-[12px] bg-white/80 text-center text-base font-black outline-none dark:bg-white/[0.08]"
-                />
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <input
-                      value={tag.name}
-                      onChange={(event) => updateTag({ ...tag, name: event.target.value, updatedAt: new Date().toISOString() })}
-                      onBlur={() => pushSettings()}
-                      className="min-w-0 flex-1 bg-transparent text-[13px] font-black outline-none"
-                    />
-                    <input
-                      type="color"
-                      value={tag.color}
-                      onChange={(event) => updateTag({ ...tag, color: event.target.value, updatedAt: new Date().toISOString() })}
-                      onBlur={() => pushSettings()}
-                      className="h-6 w-8 cursor-pointer rounded-md border border-[var(--border-color)] bg-transparent"
-                    />
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    removeTag(tag.id);
-                    window.setTimeout(() => pushSettings(), 50);
-                  }}
-                  className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-red-50 text-red-500 dark:bg-red-950/20"
-                >
-                  <Trash2 size={13} />
-                </button>
-              </div>
-            ))}
-
-            <div className="grid grid-cols-[36px_1fr_52px_auto] items-center gap-2 rounded-[16px] border border-dashed border-[var(--border-color)] px-2.5 py-2">
-              <input
-                value={newTagEmoji}
-                onChange={(event) => setNewTagEmoji(event.target.value)}
-                className="h-9 w-9 rounded-[12px] bg-white/80 text-center text-base font-black outline-none dark:bg-white/[0.08]"
-              />
-              <input
-                value={newTagName}
-                onChange={(event) => setNewTagName(event.target.value)}
-                placeholder="新标签"
-                className="h-9 rounded-[12px] border border-[var(--border-color)] bg-transparent px-3 text-[13px] font-black outline-none"
-              />
-              <input
-                type="color"
-                value={newTagColor}
-                onChange={(event) => setNewTagColor(event.target.value)}
-                className="h-9 w-full cursor-pointer rounded-[12px] border border-[var(--border-color)] bg-transparent"
-              />
-              <button type="button" onClick={handleAddTag} className="rounded-[12px] bg-[var(--primary-color)] px-3 py-2 text-[12px] font-black text-white">
-                添加
-              </button>
-            </div>
+          <SectionHeader icon={<Sparkles size={17} />} title="扩展入口" />
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <ExtensionCard title="备注模板" description="下一阶段用于快速插入常用感悟或计划模板。" />
+            <ExtensionCard title="父子标签" description="本阶段先保留接口，下一轮再把标签分组做成真正的层级系统。" />
           </div>
         </section>
 
@@ -259,12 +188,13 @@ export default function SettingsPage() {
                 className="hidden"
                 accept=".json"
                 onChange={(event) => {
+                  setImportError(null);
                   const file = event.target.files?.[0];
                   if (!file) return;
                   const reader = new FileReader();
                   reader.onload = () => {
                     const success = importData(String(reader.result || ""));
-                    if (!success) window.alert("导入失败");
+                    if (!success) setImportError("导入失败，请检查文件格式。");
                   };
                   reader.readAsText(file);
                 }}
@@ -281,8 +211,38 @@ export default function SettingsPage() {
               清空
             </button>
           </div>
+          {importError ? <p className="mt-3 text-[12px] font-medium text-red-500">{importError}</p> : null}
         </section>
       </div>
+    </div>
+  );
+}
+
+function QuickLinkCard({
+  href,
+  icon,
+  title,
+  description,
+}: {
+  href: string;
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+}) {
+  return (
+    <Link href={href} className="glass-card rounded-[28px] p-4 transition hover:-translate-y-0.5">
+      <div className="inline-flex rounded-[14px] bg-[var(--primary-light)] p-2 text-[var(--primary-color)]">{icon}</div>
+      <p className="mt-3 text-base font-black">{title}</p>
+      <p className="mt-1 text-[12px] font-medium text-faint">{description}</p>
+    </Link>
+  );
+}
+
+function ExtensionCard({ title, description }: { title: string; description: string }) {
+  return (
+    <div className="rounded-[22px] border border-[var(--border-color)] bg-black/[0.03] px-4 py-4 dark:bg-white/[0.04]">
+      <p className="text-sm font-black">{title}</p>
+      <p className="mt-2 text-[13px] font-medium text-faint">{description}</p>
     </div>
   );
 }

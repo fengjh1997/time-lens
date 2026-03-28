@@ -11,7 +11,7 @@ const outfit = Outfit({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "TimeFlow | 时流",
   description: "A fluid time canvas for day, week, month, and year planning.",
-  manifest: "/manifest.json",
+  manifest: process.env.NODE_ENV === "development" ? undefined : "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -41,8 +41,13 @@ export default function RootLayout({
         <AuthProvider>
           <ThemeProvider>
             <div className="ambient-bg">
-              <div className="ambient-blob-1" />
-              <div className="ambient-blob-2" />
+              <div className="ambient-flow left-[12%] top-[14%] w-[26vw]" />
+              <div className="ambient-flow right-[10%] top-[32%] w-[22vw]" />
+              <div className="ambient-flow left-[18%] bottom-[18%] w-[18vw]" />
+              <div className="ambient-particle left-[10%] top-[20%]" />
+              <div className="ambient-particle left-[22%] top-[64%] [animation-delay:2s]" />
+              <div className="ambient-particle right-[18%] top-[24%] [animation-delay:4s]" />
+              <div className="ambient-particle right-[12%] bottom-[20%] [animation-delay:6s]" />
             </div>
 
             <div className="relative flex h-screen flex-col overflow-hidden">

@@ -28,6 +28,7 @@ function HomeContent() {
   const currentView = (searchParams.get("view") as TimeView) || "week";
   const view: TimeView = currentView === "day" ? "day" : "week";
   const offset = Number(searchParams.get("offset") || 0);
+  const selectedTagIds = (searchParams.get("tags") || "").split(",").filter(Boolean);
 
   const targetDate = useMemo(() => {
     const today = new Date();
@@ -74,7 +75,11 @@ function HomeContent() {
             transition={{ duration: 0.24 }}
             className="h-full"
           >
-            {view === "day" ? <DayGrid dateStr={formatDate(targetDate)} /> : <WeekGrid weekDates={weekDates} />}
+            {view === "day" ? (
+              <DayGrid dateStr={formatDate(targetDate)} selectedTagIds={selectedTagIds} />
+            ) : (
+              <WeekGrid weekDates={weekDates} selectedTagIds={selectedTagIds} />
+            )}
           </motion.div>
         </AnimatePresence>
       </div>

@@ -18,7 +18,7 @@ export default function AuthPage() {
   const [regSuccess, setRegSuccess] = useState(false);
 
   useEffect(() => {
-    if (user) router.push("/day");
+    if (user) router.push("/now");
   }, [router, user]);
 
   const handleAuth = async (event: React.FormEvent) => {
@@ -43,12 +43,12 @@ export default function AuthPage() {
         if (data.user && !data.session) {
           setRegSuccess(true);
         } else {
-          router.push("/day");
+          router.push("/now");
         }
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
         if (signInError) throw signInError;
-        router.push("/day");
+        router.push("/now");
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "认证失败");
@@ -70,8 +70,10 @@ export default function AuthPage() {
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
       <div className="relative w-full max-w-md overflow-hidden rounded-[42px] border border-white/55 bg-[linear-gradient(180deg,rgba(255,255,255,0.85),rgba(255,255,255,0.72))] p-8 shadow-[var(--shadow-lg)] backdrop-blur-[30px] sm:p-10">
-        <div className="pointer-events-none absolute left-1/2 top-[34%] h-72 w-72 -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(var(--primary-rgb),0.24)_0%,rgba(var(--primary-rgb),0.1)_34%,transparent_72%)]" />
-        <div className="pointer-events-none absolute right-[-28px] top-[-20px] h-40 w-40 rounded-full bg-[radial-gradient(circle,rgba(117,213,255,0.2)_0%,rgba(117,213,255,0.08)_36%,transparent_72%)]" />
+        <div className="pointer-events-none absolute inset-x-10 top-24 h-px bg-[linear-gradient(90deg,transparent,rgba(var(--primary-rgb),0.28),transparent)]" />
+        <div className="pointer-events-none absolute inset-x-8 bottom-24 h-px bg-[linear-gradient(90deg,transparent,rgba(var(--primary-rgb),0.18),transparent)]" />
+        <div className="pointer-events-none absolute right-10 top-16 h-2 w-2 rounded-full bg-[rgba(var(--primary-rgb),0.28)]" />
+        <div className="pointer-events-none absolute left-14 top-32 h-1.5 w-1.5 rounded-full bg-[rgba(var(--primary-rgb),0.22)]" />
 
         <div className="relative z-10 text-center">
           <div className="mb-4 inline-flex rounded-[26px] bg-[var(--primary-light)] p-4 text-[var(--primary-color)]">

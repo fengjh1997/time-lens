@@ -11,6 +11,7 @@ function DayContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const dateStr = searchParams.get("date") || new Date().toISOString().split("T")[0];
+  const selectedTagIds = (searchParams.get("tags") || "").split(",").filter(Boolean);
   const current = new Date(`${dateStr}T00:00:00`);
 
   const moveDay = (offset: number) => {
@@ -30,7 +31,7 @@ function DayContent() {
       />
 
       <div className="flex-1 overflow-hidden">
-        <DayGrid dateStr={dateStr} />
+        <DayGrid dateStr={dateStr} selectedTagIds={selectedTagIds} />
       </div>
     </div>
   );

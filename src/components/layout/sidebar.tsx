@@ -58,7 +58,8 @@ export default function Sidebar() {
 
       {/* Energy Card */}
       <div className="bg-[var(--primary-color)] rounded-[28px] p-5 text-white mb-8 shadow-xl shadow-[var(--primary-glow)] group relative overflow-hidden transition-transform hover:scale-[1.02]">
-        <div className="absolute -top-6 -right-6 w-20 h-20 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-colors" />
+        <div className="absolute inset-x-5 top-4 h-px bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.45),transparent)]" />
+        <div className="absolute right-6 top-6 h-2 w-2 rounded-full bg-white/35" />
         <p className="text-[11px] font-black opacity-80 uppercase tracking-widest flex items-center gap-1.5">
           <Sparkles size={12} />
           当前总能量

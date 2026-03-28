@@ -1,0 +1,66 @@
+<svg width="900" height="1600" viewBox="0 0 900 1600" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="900" y2="1600" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F7F4EE"/>
+      <stop offset="1" stop-color="#ECE8E0"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="18" stdDeviation="28" flood-color="#141618" flood-opacity="0.10"/>
+    </filter>
+    <filter id="mist" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="38"/>
+    </filter>
+    <filter id="glow" x="-120%" y="-120%" width="340%" height="340%">
+      <feGaussianBlur stdDeviation="14" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <g id="starFill">
+      <path d="M12 0L15.2 8.1L24 8.8L17.2 14.6L19.4 23.2L12 18.3L4.6 23.2L6.8 14.6L0 8.8L8.8 8.1L12 0Z" fill="#16B981"/>
+    </g>
+    <g id="starLine">
+      <path d="M12 1.8L14.7 8.5L21.9 9.1L16.4 13.9L18.2 21L12 16.9L5.8 21L7.6 13.9L2.1 9.1L9.3 8.5L12 1.8Z" stroke="#16B981" stroke-width="1.8" fill="none"/>
+    </g>
+  </defs>
+  <rect width="900" height="1600" fill="url(#bg)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="34" y="32" width="832" height="172" rx="40" fill="#FFFFFF" fill-opacity="0.78"/>
+  </g>
+  <circle cx="88" cy="90" r="34" fill="#FFFFFF" fill-opacity="0.92"/>
+  <use href="#starFill" transform="translate(76 78)"/>
+  <text x="140" y="92" fill="#141618" font-family="Arial, sans-serif" font-size="28" font-weight="800">TimeFlow</text>
+  <text x="140" y="122" fill="#7C7F82" font-family="Arial, sans-serif" font-size="18" font-weight="600">时流 · 此刻 / Mist Star Curtain</text>
+
+  <ellipse cx="290" cy="618" rx="220" ry="140" fill="#FFFFFF" fill-opacity="0.42" filter="url(#mist)"/>
+  <ellipse cx="598" cy="828" rx="240" ry="160" fill="#FFFFFF" fill-opacity="0.36" filter="url(#mist)"/>
+  <ellipse cx="424" cy="1038" rx="260" ry="150" fill="#FFFFFF" fill-opacity="0.30" filter="url(#mist)"/>
+
+  <g opacity="0.84">
+    <use href="#starLine" transform="translate(132 462) scale(0.44)"/>
+    <use href="#starFill" transform="translate(244 536) scale(0.40)" opacity="0.52"/>
+    <use href="#starLine" transform="translate(346 448) scale(0.52)"/>
+    <use href="#starFill" transform="translate(658 524) scale(0.42)" opacity="0.56"/>
+    <use href="#starLine" transform="translate(744 646) scale(0.44)"/>
+    <use href="#starFill" transform="translate(664 860) scale(0.42)" opacity="0.54"/>
+    <use href="#starLine" transform="translate(520 1038) scale(0.46)"/>
+    <use href="#starFill" transform="translate(244 1104) scale(0.48)" opacity="0.58"/>
+    <use href="#starLine" transform="translate(146 906) scale(0.42)"/>
+  </g>
+
+  <g filter="url(#glow)">
+    <ellipse cx="450" cy="820" rx="138" ry="138" fill="#16B981" fill-opacity="0.08"/>
+  </g>
+  <use href="#starFill" transform="translate(402 772) scale(4)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="494" y="742" width="188" height="64" rx="32" fill="#FFFFFF" fill-opacity="0.88"/>
+  </g>
+  <circle cx="532" cy="774" r="13" fill="#E9FAF4"/>
+  <path d="M532 766V774L538 778" stroke="#16B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="558" y="782" fill="#16B981" font-family="Arial, sans-serif" font-size="22" font-weight="800">21:00 - 22:00</text>
+
+  <g opacity="0.74">
+    <text x="238" y="1324" fill="#141618" font-family="Arial, sans-serif" font-size="34" font-weight="800">像晨雾里的星幕</text>
+    <text x="172" y="1366" fill="#7C7F82" font-family="Arial, sans-serif" font-size="23" font-weight="600">更空灵、更柔和，边界几乎融进空气里</text>
+  </g>
+</svg>

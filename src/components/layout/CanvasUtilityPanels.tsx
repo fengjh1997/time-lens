@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Goal, Tags, X } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTimeStore } from "@/store/timeStore";
 
 function getWeekDates(today: Date) {
@@ -17,8 +19,11 @@ function getWeekDates(today: Date) {
 }
 
 export default function CanvasUtilityPanels() {
-  const { tags, settings, updateTag, updateSettings, getDayEnergy, getWeekEnergy } = useTimeStore();
+  const { tags, settings, getDayEnergy, getWeekEnergy, updateSettings } = useTimeStore();
   const [panel, setPanel] = useState<"tags" | "goals" | null>(null);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   const today = new Date().toISOString().split("T")[0];
   const weekDates = useMemo(() => getWeekDates(new Date()), []);
@@ -26,6 +31,31 @@ export default function CanvasUtilityPanels() {
   const weekEnergy = getWeekEnergy(weekDates);
   const todayRatio = Math.min(1, todayEnergy / Math.max(settings.dailyEnergyGoal, 0.1));
   const weekRatio = Math.min(1, weekEnergy / Math.max(settings.weeklyEnergyGoal, 0.1));
+  const weeklyTagGoals = settings.weeklyTagGoals || {};
+  const selectedTagIds = (searchParams.get("tags") || "").split(",").filter(Boolean);
+
+  const goalSummary = tags
+    .map((tag) => {
+      const target = weeklyTagGoals[tag.id] || 0;
+      const count = weekDates.reduce((sum, date) => {
+        const store = useTimeStore.getState();
+        const blocks = store.getBlocksForDate(date);
+        return sum + blocks.filter((block) => block.tagId === tag.id && block.status === "completed").length;
+      }, 0);
+      return { tag, target, count };
+    })
+    .filter((item) => item.target > 0)
+    .sort((left, right) => left.target - left.count - (right.target - right.count));
+
+  const updateTagFilter = (nextTagIds: string[]) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (nextTagIds.length > 0) {
+      params.set("tags", nextTagIds.join(","));
+    } else {
+      params.delete("tags");
+    }
+    router.replace(`${pathname}?${params.toString()}`);
+  };
 
   return (
     <>
@@ -87,62 +117,45 @@ export default function CanvasUtilityPanels() {
 
               {panel === "tags" ? (
                 <div className="space-y-4 px-5 pb-6">
-                  <p className="text-[13px] font-medium text-faint">管理标签名称、emoji 和颜色。这里只是系统入口，不会影响拖拽和长按充能。</p>
-                  <div className="flex flex-wrap gap-2">
-                    {tags.map((tag) => (
-                      <div
-                        key={tag.id}
-                        className="inline-flex items-center gap-2 rounded-full border border-[var(--border-color)] bg-white/55 px-3 py-2 text-[12px] font-black dark:bg-white/[0.06]"
-                      >
-                        <span>{tag.emoji}</span>
-                        <span>{tag.name}</span>
-                      </div>
-                    ))}
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-[13px] font-medium text-faint">
+                      这里选中的标签会在当前视图里做过滤显示，并用标签颜色接管时间块配色。
+                    </p>
+                    <button type="button" onClick={() => updateTagFilter([])} className="text-[12px] font-black text-[var(--primary-color)]">
+                      清空
+                    </button>
                   </div>
 
-                  <div className="grid gap-2">
-                    {tags.map((tag) => (
-                      <div
-                        key={tag.id}
-                        className="grid grid-cols-[36px_1fr_56px] items-center gap-2 rounded-[18px] border border-[var(--border-color)] px-3 py-2.5"
-                      >
-                        <input
-                          value={tag.emoji}
-                          onChange={(event) =>
-                            updateTag({
-                              ...tag,
-                              emoji: event.target.value || tag.emoji,
-                              updatedAt: new Date().toISOString(),
-                            })
+                  <div className="grid grid-cols-2 gap-3">
+                    {tags.map((tag) => {
+                      const active = selectedTagIds.includes(tag.id);
+                      return (
+                        <button
+                          key={tag.id}
+                          type="button"
+                          onClick={() =>
+                            updateTagFilter(
+                              active ? selectedTagIds.filter((item) => item !== tag.id) : [...selectedTagIds, tag.id],
+                            )
                           }
-                          className="h-9 w-9 rounded-[12px] bg-white/80 text-center text-base font-black outline-none dark:bg-white/[0.08]"
-                        />
-                        <input
-                          value={tag.name}
-                          onChange={(event) =>
-                            updateTag({
-                              ...tag,
-                              name: event.target.value,
-                              updatedAt: new Date().toISOString(),
-                            })
-                          }
-                          className="bg-transparent text-[13px] font-black outline-none"
-                        />
-                        <input
-                          type="color"
-                          value={tag.color}
-                          onChange={(event) =>
-                            updateTag({
-                              ...tag,
-                              color: event.target.value,
-                              updatedAt: new Date().toISOString(),
-                            })
-                          }
-                          className="h-9 w-full cursor-pointer rounded-[12px] border border-[var(--border-color)] bg-transparent"
-                        />
-                      </div>
-                    ))}
+                          className={`rounded-[20px] border px-4 py-4 text-left transition ${
+                            active ? "border-transparent text-white shadow-lg" : "border-[var(--border-color)] bg-black/[0.02] dark:bg-white/[0.03]"
+                          }`}
+                          style={active ? { backgroundColor: tag.color } : undefined}
+                        >
+                          <div className="text-2xl">{tag.emoji}</div>
+                          <div className="mt-2 text-[13px] font-black">{tag.name}</div>
+                        </button>
+                      );
+                    })}
                   </div>
+                  <Link
+                    href="/tags"
+                    onClick={() => setPanel(null)}
+                    className="inline-flex rounded-full bg-[var(--primary-color)] px-4 py-2 text-[13px] font-black text-white"
+                  >
+                    打开标签管理
+                  </Link>
                 </div>
               ) : (
                 <div className="space-y-4 px-5 pb-6">
@@ -150,30 +163,57 @@ export default function CanvasUtilityPanels() {
                     <div className="flex items-center justify-between gap-3">
                       <div>
                         <p className="text-[12px] font-black text-[var(--primary-color)]">目标联动</p>
-                        <h3 className="mt-2 text-xl font-black tracking-[-0.04em]">把今天和本周连成一条节奏线</h3>
+                        <h3 className="mt-2 text-xl font-black tracking-[-0.04em]">今天与本周的节律概览</h3>
                       </div>
-                      <div className="liquid-ring flex h-16 w-16 items-center justify-center rounded-full bg-[radial-gradient(circle_at_50%_35%,#ffffff_0%,rgba(var(--primary-rgb),0.15)_22%,rgba(var(--primary-rgb),0.9)_62%,rgba(var(--primary-rgb),0.28)_100%)] text-lg font-black text-white">
+                      <div className="liquid-ring flex h-16 w-16 items-center justify-center rounded-full border border-[rgba(var(--primary-rgb),0.2)] bg-[linear-gradient(180deg,rgba(var(--primary-rgb),0.92),rgba(var(--primary-rgb),0.62))] text-lg font-black text-white">
                         {Math.round(weekRatio * 100)}%
                       </div>
                     </div>
                   </div>
 
                   <LiquidGoalCard
-                    title="今日目标"
-                    helper="先把今天的块走顺"
+                    title="今日总量"
+                    helper="今天先把势能充起来"
                     value={todayEnergy}
                     goal={settings.dailyEnergyGoal}
                     ratio={todayRatio}
                     onChange={(goal) => updateSettings({ dailyEnergyGoal: goal })}
                   />
                   <LiquidGoalCard
-                    title="本周目标"
-                    helper="让七天的势能连续起来"
+                    title="本周总量"
+                    helper="用一周的节律来平衡输出"
                     value={weekEnergy}
                     goal={settings.weeklyEnergyGoal}
                     ratio={weekRatio}
                     onChange={(goal) => updateSettings({ weeklyEnergyGoal: goal })}
                   />
+
+                  <div className="glass-card rounded-[24px] p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-black">结构目标</p>
+                        <p className="mt-1 text-[12px] font-medium text-faint">先追踪关键标签，再考虑更细的节律目标。</p>
+                      </div>
+                      <Link href="/dashboard?tab=goals" onClick={() => setPanel(null)} className="text-[12px] font-black text-[var(--primary-color)]">
+                        打开追踪
+                      </Link>
+                    </div>
+                    <div className="mt-4 space-y-2">
+                      {goalSummary.length > 0 ? (
+                        goalSummary.slice(0, 3).map(({ tag, count, target }) => (
+                          <div key={tag.id} className="flex items-center justify-between rounded-[18px] border border-[var(--border-color)] px-3 py-2 text-[12px] font-black">
+                            <span className="inline-flex items-center gap-2">
+                              <span>{tag.emoji}</span>
+                              <span>{tag.name}</span>
+                            </span>
+                            <span style={{ color: tag.color }}>{count}/{target}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-[12px] font-medium text-faint">还没有结构目标。去趋势页里为关键标签设置每周目标。</p>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
             </motion.div>

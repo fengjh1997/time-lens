@@ -1,0 +1,133 @@
+<svg width="900" height="1600" viewBox="0 0 900 1600" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1600" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F7F5F0"/>
+      <stop offset="1" stop-color="#F2EFE8"/>
+    </linearGradient>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="24" flood-color="#141618" flood-opacity="0.10"/>
+    </filter>
+    <filter id="glow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="16" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="tinyGlow" x="-120%" y="-120%" width="340%" height="340%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <g id="starFilled">
+      <path d="M12 0L15.2 8.1L24 8.8L17.2 14.6L19.4 23.2L12 18.3L4.6 23.2L6.8 14.6L0 8.8L8.8 8.1L12 0Z" fill="#16B981"/>
+    </g>
+    <g id="starOutline">
+      <path d="M12 1.8L14.7 8.5L21.9 9.1L16.4 13.9L18.2 21L12 16.9L5.8 21L7.6 13.9L2.1 9.1L9.3 8.5L12 1.8Z" stroke="#16B981" stroke-width="1.8" fill="none"/>
+    </g>
+  </defs>
+
+  <rect width="900" height="1600" fill="url(#bg)"/>
+
+  <g filter="url(#softShadow)">
+    <rect x="32" y="32" width="836" height="174" rx="40" fill="rgba(255,255,255,0.78)"/>
+    <rect x="32" y="32" width="836" height="174" rx="40" fill="#FFFFFF" fill-opacity="0.70"/>
+  </g>
+
+  <circle cx="86" cy="92" r="34" fill="#FFFFFF" fill-opacity="0.88"/>
+  <use href="#starFilled" transform="translate(74 80) scale(1)" />
+  <text x="136" y="92" fill="#141618" font-family="Arial, sans-serif" font-size="28" font-weight="800">TimeFlow</text>
+  <text x="136" y="122" fill="#7B7F84" font-family="Arial, sans-serif" font-size="18" font-weight="600">时流 · 此刻 / Star Tide Canvas</text>
+
+  <g opacity="0.95">
+    <rect x="48" y="148" width="320" height="42" rx="21" fill="#FFFFFF" fill-opacity="0.82"/>
+    <circle cx="79" cy="169" r="16" fill="#16B981"/>
+    <text x="74" y="175" fill="white" font-family="Arial, sans-serif" font-size="18">○</text>
+    <circle cx="128" cy="169" r="3.5" fill="#7B7F84"/>
+    <rect x="165" y="160" width="20" height="18" rx="4" stroke="#7B7F84" stroke-width="1.6"/>
+    <rect x="224" y="160" width="18" height="18" rx="4" stroke="#7B7F84" stroke-width="1.6"/>
+    <circle cx="291" cy="169" r="10" stroke="#7B7F84" stroke-width="1.6"/>
+
+    <rect x="520" y="148" width="128" height="42" rx="21" fill="#FFFFFF" fill-opacity="0.82"/>
+    <path d="M556 160L545 169L556 178" stroke="#7B7F84" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="584" cy="169" r="9" stroke="#7B7F84" stroke-width="1.8"/>
+    <path d="M618 160L629 169L618 178" stroke="#7B7F84" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <rect x="668" y="148" width="168" height="42" rx="21" fill="#FFFFFF" fill-opacity="0.82"/>
+    <path d="M701 160L690 169L701 178" stroke="#7B7F84" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="752" cy="169" r="6" fill="#16B981"/>
+    <path d="M804 160L815 169L804 178" stroke="#7B7F84" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <g opacity="0.22">
+    <path d="M88 516C206 436 330 406 450 412C570 418 683 476 808 596" stroke="#16B981" stroke-width="1.2"/>
+    <path d="M126 760C258 630 432 602 620 648C706 670 760 708 806 748" stroke="#16B981" stroke-width="1.1"/>
+    <path d="M114 1048C262 930 420 904 612 942C707 960 770 1004 826 1052" stroke="#16B981" stroke-width="1.1"/>
+  </g>
+
+  <g opacity="0.9" filter="url(#tinyGlow)">
+    <use href="#starOutline" transform="translate(98 394) scale(0.55)" />
+    <use href="#starFilled" transform="translate(182 458) scale(0.42)" opacity="0.55"/>
+    <use href="#starOutline" transform="translate(282 362) scale(0.48)" />
+    <use href="#starFilled" transform="translate(672 402) scale(0.36)" opacity="0.5"/>
+    <use href="#starOutline" transform="translate(770 474) scale(0.46)" />
+    <use href="#starFilled" transform="translate(744 868) scale(0.34)" opacity="0.48"/>
+    <use href="#starOutline" transform="translate(154 1128) scale(0.44)" />
+    <use href="#starFilled" transform="translate(714 1214) scale(0.42)" opacity="0.52"/>
+  </g>
+
+  <g filter="url(#glow)">
+    <ellipse cx="444" cy="864" rx="196" ry="146" fill="#16B981" fill-opacity="0.08"/>
+    <ellipse cx="444" cy="864" rx="148" ry="112" fill="#16B981" fill-opacity="0.06"/>
+  </g>
+
+  <g opacity="0.96">
+    <use href="#starOutline" transform="translate(228 642) scale(0.72)" />
+    <use href="#starFilled" transform="translate(308 586) scale(0.68)" filter="url(#tinyGlow)" />
+    <use href="#starOutline" transform="translate(404 556) scale(0.62)" />
+    <use href="#starFilled" transform="translate(560 604) scale(0.70)" filter="url(#tinyGlow)" />
+    <use href="#starFilled" transform="translate(640 712) scale(0.58)" filter="url(#tinyGlow)" opacity="0.86"/>
+    <use href="#starOutline" transform="translate(596 834) scale(0.56)" />
+    <use href="#starFilled" transform="translate(512 932) scale(0.66)" filter="url(#tinyGlow)" />
+    <use href="#starOutline" transform="translate(344 978) scale(0.62)" />
+    <use href="#starFilled" transform="translate(224 910) scale(0.70)" filter="url(#tinyGlow)" opacity="0.82"/>
+    <use href="#starOutline" transform="translate(166 782) scale(0.56)" />
+  </g>
+
+  <g opacity="0.88">
+    <use href="#starOutline" transform="translate(92 272) scale(0.42)" />
+    <use href="#starOutline" transform="translate(220 242) scale(0.36)" />
+    <use href="#starFilled" transform="translate(366 226) scale(0.40)" opacity="0.52" />
+    <use href="#starOutline" transform="translate(542 242) scale(0.36)" />
+    <use href="#starFilled" transform="translate(708 284) scale(0.44)" opacity="0.56" />
+    <use href="#starOutline" transform="translate(806 438) scale(0.34)" />
+    <use href="#starFilled" transform="translate(802 654) scale(0.38)" opacity="0.5" />
+    <use href="#starOutline" transform="translate(780 894) scale(0.34)" />
+    <use href="#starFilled" transform="translate(688 1122) scale(0.44)" opacity="0.54" />
+    <use href="#starOutline" transform="translate(492 1262) scale(0.36)" />
+    <use href="#starFilled" transform="translate(278 1292) scale(0.40)" opacity="0.5" />
+    <use href="#starOutline" transform="translate(122 1184) scale(0.36)" />
+    <use href="#starFilled" transform="translate(80 964) scale(0.34)" opacity="0.48" />
+    <use href="#starOutline" transform="translate(72 728) scale(0.32)" />
+  </g>
+
+  <g filter="url(#glow)">
+    <use href="#starFilled" transform="translate(414 822) scale(2.2)" />
+  </g>
+  <use href="#starFilled" transform="translate(414 822) scale(2.2)" />
+
+  <g filter="url(#softShadow)">
+    <rect x="490" y="704" width="188" height="64" rx="32" fill="#FFFFFF" fill-opacity="0.88"/>
+    <rect x="490" y="704" width="188" height="64" rx="32" fill="#FFFFFF" fill-opacity="0.62"/>
+  </g>
+  <circle cx="530" cy="736" r="14" fill="#E8FAF4"/>
+  <path d="M530 728V736L536 740" stroke="#16B981" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="556" y="744" fill="#16B981" font-family="Arial, sans-serif" font-size="22" font-weight="800">21:00 - 22:00</text>
+
+  <g opacity="0.74">
+    <text x="286" y="1192" fill="#141618" font-family="Arial, sans-serif" font-size="36" font-weight="800">当前一小时像主潮汐</text>
+    <text x="232" y="1234" fill="#7B7F84" font-family="Arial, sans-serif" font-size="24" font-weight="600">点击主星进入时间块，长按主星完成充能</text>
+  </g>
+</svg>

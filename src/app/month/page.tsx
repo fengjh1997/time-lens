@@ -1,10 +1,11 @@
 "use client";
 
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Check, MoreHorizontal } from "lucide-react";
+import { Check, MoreHorizontal, Tags } from "lucide-react";
 import { SCORE_ENERGY, useTimeStore } from "@/store/timeStore";
 import CanvasTopBar from "@/components/layout/CanvasTopBar";
+import { blockMatchesTagFilter } from "@/lib/blockTags";
 
 const WEEKDAY_NAMES = ["日", "一", "二", "三", "四", "五", "六"];
 const MONTH_NAMES = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
@@ -37,25 +38,25 @@ function MonthContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const scope = searchParams.get("scope") === "year" ? "year" : "month";
-  const initialYear = Number(searchParams.get("year")) || new Date().getFullYear();
-  const initialMonth = Math.max(1, Math.min(12, Number(searchParams.get("month")) || new Date().getMonth() + 1));
-  const [currentDate, setCurrentDate] = useState(new Date(initialYear, initialMonth - 1, 1));
-  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
-  const [showMoreTags, setShowMoreTags] = useState(false);
-
-  const year = currentDate.getFullYear();
-  const month = currentDate.getMonth();
+  const year = Number(searchParams.get("year")) || new Date().getFullYear();
+  const month = Math.max(0, Math.min(11, (Number(searchParams.get("month")) || new Date().getMonth() + 1) - 1));
   const weeks = useMemo(() => generateMonthCalendar(year, month), [year, month]);
+  const showMoreTags = searchParams.get("more") === "1";
+  const selectedTagIds = (searchParams.get("tags") || "").split(",").filter(Boolean);
   const visibleTags = showMoreTags ? tags : tags.slice(0, VISIBLE_TAG_COUNT);
-  const activeTags = selectedTagIds.length > 0;
 
-  const isIncluded = (tagId?: string) => !activeTags || (!!tagId && selectedTagIds.includes(tagId));
+  const setParam = (key: string, value?: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value) params.set(key, value);
+    else params.delete(key);
+    router.replace(`/month?${params.toString()}`);
+  };
 
   const getDailyEnergy = (dateStr: string) =>
     Object.entries(blocks)
       .filter(([key]) => key.startsWith(dateStr))
       .map(([, block]) => block)
-      .filter((block) => block.status === "completed" && isIncluded(block.tagId))
+      .filter((block) => block.status === "completed" && blockMatchesTagFilter(block, selectedTagIds))
       .reduce((sum, block) => sum + SCORE_ENERGY[block.score], 0);
 
   const monthEnergy = Array.from({ length: new Date(year, month + 1, 0).getDate() }, (_, index) => {
@@ -82,39 +83,40 @@ function MonthContent() {
   });
 
   const moveScope = (offset: number) => {
-    const next = new Date(currentDate);
+    const next = new Date(year, month, 1);
     if (scope === "year") {
       next.setFullYear(next.getFullYear() + offset);
-      router.replace(`/month?scope=year&year=${next.getFullYear()}`);
-    } else {
-      next.setMonth(next.getMonth() + offset);
-      router.replace(`/month?scope=month&year=${next.getFullYear()}&month=${next.getMonth() + 1}`);
+      router.replace(`/month?scope=year&year=${next.getFullYear()}${selectedTagIds.length ? `&tags=${selectedTagIds.join(",")}` : ""}`);
+      return;
     }
-    setCurrentDate(next);
+
+    next.setMonth(next.getMonth() + offset);
+    router.replace(
+      `/month?scope=month&year=${next.getFullYear()}&month=${next.getMonth() + 1}${selectedTagIds.length ? `&tags=${selectedTagIds.join(",")}` : ""}`,
+    );
   };
 
   const toggleTag = (tagId: string) => {
-    setSelectedTagIds((current) =>
-      current.includes(tagId) ? current.filter((item) => item !== tagId) : [...current, tagId],
-    );
+    const nextTagIds = selectedTagIds.includes(tagId)
+      ? selectedTagIds.filter((item) => item !== tagId)
+      : [...selectedTagIds, tagId];
+    setParam("tags", nextTagIds.length ? nextTagIds.join(",") : undefined);
   };
 
   return (
     <div className="flex h-full flex-col bg-[var(--background)]">
       <CanvasTopBar
-        subtitle={scope === "year" ? "时流 · Year / Atlas" : "时流 · Month / Heatmap"}
-        statusLabel={scope === "year" ? "年度节奏" : "月度热力"}
+        subtitle={scope === "year" ? "时流 Year / Atlas" : "时流 Month / Heatmap"}
+        statusLabel={scope === "year" ? "年度结构" : "月度热力"}
         onPrev={() => moveScope(-1)}
         onNext={() => moveScope(1)}
         onReset={() => {
           const now = new Date();
-          const nextScope = scope === "year" ? "year" : "month";
           router.replace(
-            nextScope === "year"
+            scope === "year"
               ? `/month?scope=year&year=${now.getFullYear()}`
               : `/month?scope=month&year=${now.getFullYear()}&month=${now.getMonth() + 1}`,
           );
-          setCurrentDate(new Date(now.getFullYear(), now.getMonth(), 1));
         }}
       />
 
@@ -124,15 +126,22 @@ function MonthContent() {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-[11px] font-black uppercase tracking-[0.3em] text-[var(--primary-color)]">Panorama</p>
-                <h1 className="mt-2 text-3xl font-black">
-                  {scope === "year" ? `${year} 年视图` : `${year}年${month + 1}月`}
-                </h1>
+                <h1 className="mt-2 text-3xl font-black">{scope === "year" ? `${year}年视图` : `${year}年${month + 1}月`}</h1>
               </div>
+            </div>
 
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                className="glass-card inline-flex items-center gap-2 rounded-full px-4 py-2 text-[12px] font-black text-subtle"
+              >
+                <Tags size={14} />
+                标签视图
+              </button>
               {tags.length > VISIBLE_TAG_COUNT && (
                 <button
                   type="button"
-                  onClick={() => setShowMoreTags((value) => !value)}
+                  onClick={() => setParam("more", showMoreTags ? undefined : "1")}
                   className="glass-card inline-flex items-center gap-2 rounded-full px-4 py-2 text-[12px] font-black text-subtle"
                 >
                   <MoreHorizontal size={14} />
@@ -141,31 +150,34 @@ function MonthContent() {
               )}
             </div>
 
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="mt-3 flex flex-wrap gap-2">
               <button
                 type="button"
-                onClick={() => setSelectedTagIds([])}
+                onClick={() => setParam("tags", undefined)}
                 className={`rounded-full px-4 py-2 text-[12px] font-black ${
                   selectedTagIds.length === 0 ? "bg-[var(--primary-color)] text-white" : "glass-card text-subtle"
                 }`}
               >
                 全部标签
               </button>
-              {visibleTags.map((tag) => (
-                <button
-                  key={tag.id}
-                  type="button"
-                  onClick={() => toggleTag(tag.id)}
-                  className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-[12px] font-black ${
-                    selectedTagIds.includes(tag.id) ? "text-white" : "glass-card text-subtle"
-                  }`}
-                  style={selectedTagIds.includes(tag.id) ? { backgroundColor: tag.color } : undefined}
-                >
-                  <span>{tag.emoji}</span>
-                  <span>{tag.name}</span>
-                  {selectedTagIds.includes(tag.id) && <Check size={12} />}
-                </button>
-              ))}
+              {visibleTags.map((tag) => {
+                const active = selectedTagIds.includes(tag.id);
+                return (
+                  <button
+                    key={tag.id}
+                    type="button"
+                    onClick={() => toggleTag(tag.id)}
+                    className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-[12px] font-black ${
+                      active ? "text-white" : "glass-card text-subtle"
+                    }`}
+                    style={active ? { backgroundColor: tag.color } : undefined}
+                  >
+                    <span>{tag.emoji}</span>
+                    <span>{tag.name}</span>
+                    {active ? <Check size={12} /> : null}
+                  </button>
+                );
+              })}
             </div>
           </section>
 
@@ -194,7 +206,7 @@ function MonthContent() {
                           <button
                             key={dayIndex}
                             type="button"
-                            onClick={() => day && router.push(`/day?date=${dateStr}`)}
+                            onClick={() => day && router.push(`/day?date=${dateStr}${selectedTagIds.length ? `&tags=${selectedTagIds.join(",")}` : ""}`)}
                             className={`aspect-square rounded-[20px] border p-2 text-left transition ${
                               day ? "border-[var(--border-color)]" : "border-transparent opacity-0"
                             }`}
@@ -204,20 +216,18 @@ function MonthContent() {
                                     backgroundColor:
                                       energy === 0
                                         ? "var(--panel-bg)"
-                                        : energy > 0
-                                          ? `rgba(var(--primary-rgb), ${0.16 + opacity * 0.72})`
-                                          : "var(--score-punish)",
+                                        : `rgba(var(--primary-rgb), ${0.16 + opacity * 0.72})`,
                                     color: energy > 0 ? "white" : undefined,
                                   }
                                 : undefined
                             }
                           >
-                            {day && (
+                            {day ? (
                               <>
                                 <p className="text-sm font-black">{day}</p>
                                 <p className="mt-2 text-[11px] font-black">{energy.toFixed(settings.decimalPlaces)}</p>
                               </>
-                            )}
+                            ) : null}
                           </button>
                         );
                       })}
@@ -230,7 +240,6 @@ function MonthContent() {
                 <p className="text-[12px] font-black text-[var(--primary-color)]">当前热力累计</p>
                 <div className="mt-2 flex items-end justify-between gap-3">
                   <p className="text-4xl font-black tracking-[-0.06em]">{monthEnergy.toFixed(settings.decimalPlaces)}</p>
-                  <p className="text-[13px] font-semibold text-faint">按标签筛选</p>
                 </div>
               </div>
             </section>
@@ -243,7 +252,7 @@ function MonthContent() {
                     type="button"
                     onClick={() =>
                       router.push(
-                        `/month?scope=month&year=${year}&month=${monthGroup.monthIndex + 1}`,
+                        `/month?scope=month&year=${year}&month=${monthGroup.monthIndex + 1}${selectedTagIds.length ? `&tags=${selectedTagIds.join(",")}` : ""}`,
                       )
                     }
                     className="rounded-[24px] border border-[var(--border-color)] bg-[rgba(255,255,255,0.48)] p-3 text-left shadow-[0_12px_28px_rgba(15,23,42,0.05)] transition hover:-translate-y-0.5"
@@ -266,9 +275,7 @@ function MonthContent() {
                               backgroundColor:
                                 item.energy === 0
                                   ? "var(--panel-soft)"
-                                  : item.energy > 0
-                                    ? `rgba(var(--primary-rgb), ${0.18 + opacity * 0.72})`
-                                    : "var(--score-punish)",
+                                  : `rgba(var(--primary-rgb), ${0.18 + opacity * 0.72})`,
                             }}
                           />
                         );

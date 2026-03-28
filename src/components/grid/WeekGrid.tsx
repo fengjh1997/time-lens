@@ -5,10 +5,12 @@ import { useRef, useState } from "react";
 import { AnimatePresence, motion, useDragControls, useMotionValue } from "framer-motion";
 import { PlusCircle } from "lucide-react";
 import ChargingOverlay from "@/components/ui/ChargingOverlay";
+import TagColorStack from "@/components/ui/TagColorStack";
 import RecordModal from "./RecordModal";
 import { MiniStarDisplay } from "@/components/ui/StarRating";
 import { useLongPressCharge } from "@/hooks/useLongPressCharge";
 import { useSync } from "@/hooks/useSync";
+import { blockMatchesTagFilter, getBlockTags } from "@/lib/blockTags";
 import { useTimeStore } from "@/store/timeStore";
 import type { Score, TimeBlock } from "@/types";
 
@@ -28,9 +30,10 @@ function getScoreColor(score: Score | undefined, status?: string) {
 
 interface WeekGridProps {
   weekDates: string[];
+  selectedTagIds?: string[];
 }
 
-export default function WeekGrid({ weekDates }: WeekGridProps) {
+export default function WeekGrid({ weekDates, selectedTagIds = [] }: WeekGridProps) {
   const { blocks, saveBlock, deleteBlock, getDayEnergy, settings, tags } = useTimeStore();
   const { pushBlock, deleteCloudBlock } = useSync();
   const [selectedCell, setSelectedCell] = useState<{ date: string; hour: number | string } | null>(null);
@@ -106,16 +109,20 @@ export default function WeekGrid({ weekDates }: WeekGridProps) {
             {weekDates.map((date) => (
               <div key={date} className="border-r border-[rgba(15,23,42,0.05)] last:border-r-0 dark:border-white/[0.05]">
                 {visibleHours.map((hour) => {
-                  const tag = tags.find((item) => item.id === blocks[`${date}-${hour}`]?.tagId);
+                  const visibleBlock = blockMatchesTagFilter(blocks[`${date}-${hour}`], selectedTagIds)
+                    ? blocks[`${date}-${hour}`]
+                    : undefined;
+                  const visibleTags = getBlockTags(visibleBlock, tags);
 
                   return (
                     <WeekGridCell
                       key={`${date}-${hour}`}
                       hour={hour}
-                      block={blocks[`${date}-${hour}`]}
-                      tagEmoji={tag?.emoji}
+                      block={visibleBlock}
+                      tags={visibleTags}
                       isCurrentSlot={date === today && hour === currentHour}
                       allVisibleHours={visibleHours}
+                      useTagColors={selectedTagIds.length > 0}
                       onOpen={() => {
                         setSelectedCell({ date, hour });
                         setIsModalOpen(true);
@@ -174,18 +181,20 @@ export default function WeekGrid({ weekDates }: WeekGridProps) {
 function WeekGridCell({
   hour,
   block,
-  tagEmoji,
+  tags,
   isCurrentSlot,
   allVisibleHours,
+  useTagColors,
   onOpen,
   onCharge,
   onDragMove,
 }: {
   hour: number;
   block?: TimeBlock;
-  tagEmoji?: string;
+  tags: { id: string; emoji: string; color: string; name: string }[];
   isCurrentSlot: boolean;
   allVisibleHours: number[];
+  useTagColors: boolean;
   onOpen: () => void;
   onCharge: (score: Score) => void;
   onDragMove: (toHour: number) => void;
@@ -200,7 +209,7 @@ function WeekGridCell({
     useLongPressCharge({ onChargeComplete: (score) => onCharge(score) });
 
   const isPlanned = block?.status === "planned";
-  const isEmptyBlock = !block || (!block.content?.trim() && !block.tagId && block.score === 0 && block.status !== "planned");
+  const isEmptyBlock = !block || (!block.content?.trim() && tags.length === 0 && block.score === 0 && block.status !== "planned");
   const currentIndex = allVisibleHours.indexOf(hour);
 
   return (
@@ -270,7 +279,7 @@ function WeekGridCell({
         } ${isPlanned ? "border border-dashed border-[var(--primary-color)]" : ""} ${isCurrentSlot ? "ring-2 ring-[rgba(var(--primary-rgb),0.34)] ring-offset-1 ring-offset-transparent" : ""}`}
         style={{
           y,
-          backgroundColor: isEmptyBlock ? undefined : getScoreColor(block?.score, block?.status),
+          backgroundColor: isEmptyBlock || useTagColors ? undefined : getScoreColor(block?.score, block?.status),
           boxShadow: isEmptyBlock
             ? undefined
             : isCurrentSlot
@@ -278,6 +287,8 @@ function WeekGridCell({
               : "inset 0 1px 0 rgba(255,255,255,0.22), 0 14px 30px rgba(15,23,42,0.08)",
         }}
       >
+        {!isEmptyBlock && useTagColors ? <TagColorStack tags={tags} className="rounded-[20px]" /> : null}
+
         {isCurrentSlot && isEmptyBlock && <div className="absolute inset-0 bg-[rgba(var(--primary-rgb),0.08)]" />}
 
         <AnimatePresence>
@@ -288,8 +299,12 @@ function WeekGridCell({
 
         {!isEmptyBlock && (
           <div className="relative z-10 flex w-full items-center justify-between">
-            <MiniStarDisplay score={block?.score ?? 0} size={12} color="currentColor" />
-            <div className="text-[15px] leading-none">{tagEmoji || ""}</div>
+            <MiniStarDisplay score={block?.score ?? 0} size={12} color={useTagColors ? "white" : "currentColor"} />
+            <div className="flex gap-0.5 text-[15px] leading-none text-white">
+              {tags.map((tag) => (
+                <span key={tag.id}>{tag.emoji}</span>
+              ))}
+            </div>
           </div>
         )}
       </motion.button>

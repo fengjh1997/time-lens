@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChartColumnBig, Compass, Settings } from "lucide-react";
+import { ChartColumnBig, Clock3, Compass, Ellipsis } from "lucide-react";
 import AppLogoMark from "@/components/layout/AppLogoMark";
 
 const navItems = [
-  { href: "/", label: "画布", icon: Compass, matches: ["/", "/day", "/month"] },
-  { href: "/dashboard", label: "数据", icon: ChartColumnBig, matches: ["/dashboard"] },
-  { href: "/settings", label: "设置", icon: Settings, matches: ["/settings", "/auth"] },
+  { href: "/now", label: "此刻", icon: Clock3, matches: ["/now"] },
+  { href: "/", label: "视图", icon: Compass, matches: ["/", "/day", "/month"] },
+  { href: "/dashboard", label: "趋势", icon: ChartColumnBig, matches: ["/dashboard"] },
+  { href: "/settings", label: "更多", icon: Ellipsis, matches: ["/settings", "/auth", "/tags"] },
 ];
 
 export default function DesktopDock() {
@@ -21,7 +22,7 @@ export default function DesktopDock() {
           <AppLogoMark />
           <div>
             <p className="text-[11px] font-black uppercase tracking-[0.32em] text-[var(--primary-color)]">TimeFlow</p>
-            <h1 className="mt-1 text-[20px] font-black tracking-tight">时流 · 节奏画布</h1>
+            <h1 className="mt-1 text-[20px] font-black tracking-tight">时流 · 节律驾驶舱</h1>
           </div>
         </div>
 

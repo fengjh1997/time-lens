@@ -1,0 +1,63 @@
+<svg width="900" height="1600" viewBox="0 0 900 1600" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="900" y2="1600" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F8F6F1"/>
+      <stop offset="1" stop-color="#EDE8DF"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="18" stdDeviation="28" flood-color="#141618" flood-opacity="0.10"/>
+    </filter>
+    <filter id="glow" x="-120%" y="-120%" width="340%" height="340%">
+      <feGaussianBlur stdDeviation="16" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <g id="starFill">
+      <path d="M12 0L15.2 8.1L24 8.8L17.2 14.6L19.4 23.2L12 18.3L4.6 23.2L6.8 14.6L0 8.8L8.8 8.1L12 0Z" fill="#16B981"/>
+    </g>
+    <g id="starLine">
+      <path d="M12 1.8L14.7 8.5L21.9 9.1L16.4 13.9L18.2 21L12 16.9L5.8 21L7.6 13.9L2.1 9.1L9.3 8.5L12 1.8Z" stroke="#16B981" stroke-width="1.8" fill="none"/>
+    </g>
+  </defs>
+  <rect width="900" height="1600" fill="url(#bg)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="34" y="32" width="832" height="172" rx="40" fill="#FFFFFF" fill-opacity="0.78"/>
+  </g>
+  <circle cx="88" cy="90" r="34" fill="#FFFFFF" fill-opacity="0.92"/>
+  <use href="#starFill" transform="translate(76 78)"/>
+  <text x="140" y="92" fill="#141618" font-family="Arial, sans-serif" font-size="28" font-weight="800">TimeFlow</text>
+  <text x="140" y="122" fill="#7C7F82" font-family="Arial, sans-serif" font-size="18" font-weight="600">时流 · 此刻 / Glass Star Isles</text>
+
+  <g filter="url(#shadow)">
+    <path d="M238 470C274 418 338 390 420 390C500 390 566 418 610 470C650 520 668 584 668 650C668 726 638 786 584 828C540 862 488 880 428 880C356 880 298 858 254 812C210 766 188 708 188 638C188 576 208 520 238 470Z" fill="#FFFFFF" fill-opacity="0.48"/>
+    <path d="M646 638C668 594 712 568 764 568C810 568 846 584 866 616C884 644 890 678 884 718C876 768 852 804 812 828C778 848 740 850 702 836C666 822 642 798 630 764C620 734 626 682 646 638Z" fill="#FFFFFF" fill-opacity="0.34"/>
+    <path d="M96 748C124 710 168 692 224 698C270 704 306 724 326 758C348 794 352 838 338 884C322 928 292 960 246 982C206 1002 166 998 126 972C92 948 72 914 68 872C64 826 74 786 96 748Z" fill="#FFFFFF" fill-opacity="0.34"/>
+    <path d="M294 1014C316 980 350 962 392 962C430 962 462 976 484 1002C504 1026 512 1058 506 1098C500 1138 478 1172 444 1200C414 1224 380 1230 346 1218C314 1206 292 1182 282 1148C272 1114 276 1058 294 1014Z" fill="#FFFFFF" fill-opacity="0.30"/>
+  </g>
+
+  <g opacity="0.86">
+    <use href="#starFill" transform="translate(402 602) scale(3.8)" filter="url(#glow)"/>
+    <use href="#starLine" transform="translate(726 660) scale(1.08)"/>
+    <use href="#starFill" transform="translate(184 796) scale(1.22)" filter="url(#glow)"/>
+    <use href="#starLine" transform="translate(354 1084) scale(0.96)"/>
+  </g>
+
+  <g opacity="0.72">
+    <use href="#starLine" transform="translate(124 418) scale(0.44)"/>
+    <use href="#starFill" transform="translate(742 470) scale(0.38)" opacity="0.54"/>
+    <use href="#starLine" transform="translate(664 936) scale(0.42)"/>
+    <use href="#starFill" transform="translate(216 1224) scale(0.36)" opacity="0.48"/>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="494" y="544" width="188" height="64" rx="32" fill="#FFFFFF" fill-opacity="0.9"/>
+  </g>
+  <circle cx="532" cy="576" r="13" fill="#E9FAF4"/>
+  <path d="M532 568V576L538 580" stroke="#16B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="558" y="584" fill="#16B981" font-family="Arial, sans-serif" font-size="22" font-weight="800">21:00 - 22:00</text>
+
+  <g opacity="0.78">
+    <text x="242" y="1326" fill="#141618" font-family="Arial, sans-serif" font-size="34" font-weight="800">像几座漂浮的玻璃星屿</text>
+    <text x="214" y="1368" fill="#7C7F82" font-family="Arial, sans-serif" font-size="23" font-weight="600">更有物件感和层次感，主星所在的是最大的一座星屿</text>
+  </g>
+</svg>

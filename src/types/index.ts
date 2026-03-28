@@ -17,6 +17,7 @@ export interface TimeBlock {
   score: Score;
   content: string;
   tagId?: string;
+  tagIds?: string[];
   status: BlockStatus;
   updatedAt?: string;
   pomodoros?: number;
@@ -36,6 +37,7 @@ export interface UserSettings {
   showDetailsInWeekView: boolean;
   dailyEnergyGoal: number;
   weeklyEnergyGoal: number;
+  weeklyTagGoals?: Record<string, number>;
   updatedAt?: string;
 }
 

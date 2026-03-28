@@ -1,12 +1,13 @@
 "use client";
 
 import { type ComponentType, useMemo } from "react";
-import { AppWindowMac, CalendarDays, CircleDashed, SunMedium } from "lucide-react";
+import { AppWindowMac, CalendarDays, CircleDashed, Clock3, SunMedium } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
-type Scope = "day" | "week" | "month" | "year";
+type Scope = "now" | "day" | "week" | "month" | "year";
 
 const options: Array<{ id: Scope; label: string; icon: ComponentType<{ size?: number }>; route: string }> = [
+  { id: "now", label: "此刻", icon: Clock3, route: "/now" },
   { id: "day", label: "日", icon: SunMedium, route: "/?view=day&offset=0" },
   { id: "week", label: "周", icon: AppWindowMac, route: "/?view=week&offset=0" },
   { id: "month", label: "月", icon: CalendarDays, route: "/month?scope=month" },
@@ -19,8 +20,9 @@ export default function FocusScopeSwitcher() {
   const searchParams = useSearchParams();
 
   const currentScope: Scope = useMemo(() => {
+    if (pathname === "/now") return "now";
     if (pathname === "/month") return searchParams.get("scope") === "year" ? "year" : "month";
-    if (searchParams.get("view") === "day" || pathname === "/day") return "day";
+    if (pathname === "/day" || searchParams.get("view") === "day") return "day";
     return "week";
   }, [pathname, searchParams]);
 

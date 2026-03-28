@@ -35,6 +35,7 @@ const DEFAULT_SETTINGS: UserSettings = {
   showDetailsInWeekView: true,
   dailyEnergyGoal: 5,
   weeklyEnergyGoal: 30,
+  weeklyTagGoals: {},
   updatedAt: nowIso(),
 };
 

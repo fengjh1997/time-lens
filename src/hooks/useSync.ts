@@ -108,6 +108,7 @@ export function useSync() {
                 content: cloudBlock.content || "",
                 score: cloudBlock.score,
                 tagId: cloudBlock.tag_id || undefined,
+                tagIds: cloudBlock.tag_id ? [cloudBlock.tag_id] : [],
                 status: cloudBlock.status,
                 pomodoros: cloudBlock.pomodoros || 0,
                 isBonus: !!cloudBlock.is_bonus,

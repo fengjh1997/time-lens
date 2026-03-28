@@ -5,9 +5,11 @@ import { AnimatePresence, motion, useDragControls, useMotionValue } from "framer
 import { Plus } from "lucide-react";
 import RecordModal from "./RecordModal";
 import ChargingOverlay from "@/components/ui/ChargingOverlay";
+import TagColorStack from "@/components/ui/TagColorStack";
 import { MiniStarDisplay } from "@/components/ui/StarRating";
 import { useLongPressCharge } from "@/hooks/useLongPressCharge";
 import { useSync } from "@/hooks/useSync";
+import { blockMatchesTagFilter, getBlockTags } from "@/lib/blockTags";
 import { useTimeStore } from "@/store/timeStore";
 import type { Score, Tag, TimeBlock } from "@/types";
 
@@ -25,9 +27,13 @@ function getScoreColor(score?: Score) {
 
 interface DayGridProps {
   dateStr?: string;
+  selectedTagIds?: string[];
 }
 
-export default function DayGrid({ dateStr = new Date().toISOString().split("T")[0] }: DayGridProps) {
+export default function DayGrid({
+  dateStr = new Date().toISOString().split("T")[0],
+  selectedTagIds = [],
+}: DayGridProps) {
   const { blocks, saveBlock, deleteBlock, tags, settings } = useTimeStore();
   const { pushBlock, deleteCloudBlock } = useSync();
   const [selectedHour, setSelectedHour] = useState<number | string | null>(null);
@@ -37,7 +43,8 @@ export default function DayGrid({ dateStr = new Date().toISOString().split("T")[
     ? ALL_HOURS.filter((hour) => !SLEEP_HOURS.includes(hour))
     : ALL_HOURS;
 
-  const getTagForBlock = (block?: TimeBlock | null) => tags.find((tag) => tag.id === block?.tagId);
+  const getVisibleBlock = (block?: TimeBlock | null) =>
+    blockMatchesTagFilter(block, selectedTagIds) ? (block ?? undefined) : undefined;
 
   const handleDragUpdate = (fromHour: number, toHour: number) => {
     if (fromHour === toHour) return;
@@ -99,11 +106,12 @@ export default function DayGrid({ dateStr = new Date().toISOString().split("T")[
               <DayTimelineCell
                 key={hour}
                 hour={hour}
-                block={blocks[`${dateStr}-${hour}`]}
-                tag={getTagForBlock(blocks[`${dateStr}-${hour}`])}
+                block={getVisibleBlock(blocks[`${dateStr}-${hour}`])}
+                tags={getBlockTags(getVisibleBlock(blocks[`${dateStr}-${hour}`]), tags)}
                 isCurrentHour={dateStr === new Date().toISOString().split("T")[0] && hour === new Date().getHours()}
                 isSleep={SLEEP_HOURS.includes(hour)}
                 allVisibleHours={visibleHours}
+                useTagColors={selectedTagIds.length > 0}
                 onOpen={() => {
                   setSelectedHour(hour);
                   setIsModalOpen(true);
@@ -139,20 +147,22 @@ export default function DayGrid({ dateStr = new Date().toISOString().split("T")[
 function DayTimelineCell({
   hour,
   block,
-  tag,
+  tags,
   isCurrentHour,
   isSleep,
   allVisibleHours,
+  useTagColors,
   onOpen,
   onCharge,
   onDragMove,
 }: {
   hour: number;
   block?: TimeBlock;
-  tag?: Tag;
+  tags: Tag[];
   isCurrentHour: boolean;
   isSleep: boolean;
   allVisibleHours: number[];
+  useTagColors: boolean;
   onOpen: () => void;
   onCharge: (hourId: number, score: Score) => void;
   onDragMove: (fromHour: number, toHour: number) => void;
@@ -168,7 +178,7 @@ function DayTimelineCell({
 
   const isPlanned = block?.status === "planned";
   const isCompleted = block?.status === "completed";
-  const isEmptyBlock = !block || (!block.content?.trim() && !block.tagId && block.score === 0 && block.status !== "planned");
+  const isEmptyBlock = !block || (!block.content?.trim() && tags.length === 0 && block.score === 0 && block.status !== "planned");
   const detailText = block?.content?.trim() || "";
   const currentIndex = allVisibleHours.indexOf(hour);
 
@@ -239,22 +249,26 @@ function DayTimelineCell({
         }}
         className={`relative min-h-[82px] flex-1 overflow-hidden rounded-[30px] px-4 py-4 text-left no-select select-none [touch-action:none] ${
           isEmptyBlock
-            ? "bg-[#f3f3f1] shadow-none dark:bg-[#1b2027]"
+            ? "border border-[#d9d6ce] bg-[#e8e4db] shadow-none dark:border-[#27303b] dark:bg-[#161c24]"
             : "border border-[rgba(var(--primary-rgb),0.14)] shadow-[0_18px_36px_rgba(15,23,42,0.09)]"
         } ${isPlanned ? "border border-dashed border-[var(--primary-color)]" : ""} ${isCurrentHour ? "ring-2 ring-[rgba(var(--primary-rgb),0.34)] ring-offset-2 ring-offset-transparent" : ""}`}
         style={{
           y,
-          backgroundColor: isEmptyBlock ? undefined : getScoreColor(block?.score),
+          backgroundColor: isEmptyBlock || useTagColors ? undefined : getScoreColor(block?.score),
           boxShadow: isEmptyBlock
             ? undefined
             : isCurrentHour
               ? "inset 0 1px 0 rgba(255,255,255,0.22), 0 0 0 1px rgba(var(--primary-rgb),0.18), 0 18px 36px rgba(15,23,42,0.09)"
               : "inset 0 1px 0 rgba(255,255,255,0.22), 0 18px 36px rgba(15,23,42,0.09)",
-          color: isCompleted && block?.score && (block.score >= 0.75 || block.score === -1) ? "white" : "var(--foreground)",
+          color: useTagColors || (isCompleted && block?.score && (block.score >= 0.75 || block.score === -1)) ? "white" : "var(--foreground)",
         }}
       >
+        {!isEmptyBlock && useTagColors ? (
+          <TagColorStack tags={tags} className="rounded-[30px]" />
+        ) : null}
+
         {isCurrentHour && isEmptyBlock && (
-          <div className="absolute inset-0 bg-[rgba(var(--primary-rgb),0.08)]" />
+          <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(var(--primary-rgb),0.12),transparent_72%)]" />
         )}
 
         <AnimatePresence>
@@ -266,9 +280,13 @@ function DayTimelineCell({
         {!isEmptyBlock && (
           <div className="relative z-10 flex h-full items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <div className="text-[18px] leading-none">{tag?.emoji || ""}</div>
+              <div className="flex flex-wrap gap-1 text-[18px] leading-none">
+                {tags.map((tag) => (
+                  <span key={tag.id}>{tag.emoji}</span>
+                ))}
+              </div>
               {detailText ? (
-                <p className="mt-3 truncate text-[12px] font-medium leading-tight text-subtle">
+                <p className={`mt-3 truncate text-[12px] font-medium leading-tight ${useTagColors ? "text-white/88" : "text-subtle"}`}>
                   {detailText}
                 </p>
               ) : null}

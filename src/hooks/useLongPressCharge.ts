@@ -8,6 +8,8 @@ interface UseLongPressChargeProps {
   onChargeStep?: (score: Score) => void;
   onStart?: () => void;
   onCancel?: () => void;
+  resolveTargetScore?: (baseScore: Score) => Score;
+  stepThreshold?: number;
 }
 
 const STEP_THRESHOLD = 180;
@@ -25,6 +27,8 @@ export function useLongPressCharge({
   onChargeStep,
   onStart,
   onCancel,
+  resolveTargetScore,
+  stepThreshold = STEP_THRESHOLD,
 }: UseLongPressChargeProps) {
   const [isCharging, setIsCharging] = useState(false);
   const [chargeProgress, setChargeProgress] = useState(0);
@@ -57,8 +61,8 @@ export function useLongPressCharge({
     if (!activeRef.current) return 0 as Score;
 
     const elapsed = Date.now() - startTimeRef.current;
-    const nextScore = getNextScore(baseScoreRef.current);
-    const finalScore = elapsed >= STEP_THRESHOLD ? nextScore : (0 as Score);
+    const nextScore = resolveTargetScore ? resolveTargetScore(baseScoreRef.current) : getNextScore(baseScoreRef.current);
+    const finalScore = elapsed >= stepThreshold ? nextScore : (0 as Score);
 
     if (finalScore > 0) {
       onChargeComplete(finalScore);
@@ -71,7 +75,7 @@ export function useLongPressCharge({
     setChargeProgress(0);
     setCurrentChargeScore(0);
     return finalScore;
-  }, [onCancel, onChargeComplete]);
+  }, [onCancel, onChargeComplete, resolveTargetScore, stepThreshold]);
 
   const startCharging = useCallback(
     (baseScore: Score = 0) => {
@@ -82,22 +86,23 @@ export function useLongPressCharge({
       startTimeRef.current = Date.now();
       setIsCharging(true);
       setChargeProgress(0);
-      setCurrentChargeScore(getNextScore(baseScore));
+      const nextScore = resolveTargetScore ? resolveTargetScore(baseScore) : getNextScore(baseScore);
+      setCurrentChargeScore(nextScore);
       onStart?.();
 
       const tick = () => {
         if (!activeRef.current) return;
 
         const elapsed = Date.now() - startTimeRef.current;
-        const nextProgress = Math.min(elapsed / STEP_THRESHOLD, 1);
+        const nextProgress = Math.min(elapsed / stepThreshold, 1);
         setChargeProgress(nextProgress);
-        onChargeStep?.(getNextScore(baseScoreRef.current));
+        onChargeStep?.(resolveTargetScore ? resolveTargetScore(baseScoreRef.current) : getNextScore(baseScoreRef.current));
         timerRef.current = setTimeout(tick, 16);
       };
 
       timerRef.current = setTimeout(tick, 16);
     },
-    [onChargeStep, onStart],
+    [onChargeStep, onStart, resolveTargetScore, stepThreshold],
   );
 
   return {

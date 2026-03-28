@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChartColumnBig, Compass, Settings } from "lucide-react";
+import { ChartColumnBig, Clock3, Compass, Ellipsis } from "lucide-react";
 
 const navItems = [
-  { href: "/", label: "画布", icon: Compass, matches: ["/", "/day", "/month"] },
-  { href: "/dashboard", label: "数据", icon: ChartColumnBig, matches: ["/dashboard"] },
-  { href: "/settings", label: "设置", icon: Settings, matches: ["/settings", "/auth"] },
+  { href: "/now", label: "此刻", icon: Clock3, matches: ["/now"] },
+  { href: "/", label: "视图", icon: Compass, matches: ["/", "/day", "/month"] },
+  { href: "/dashboard", label: "趋势", icon: ChartColumnBig, matches: ["/dashboard"] },
+  { href: "/settings", label: "更多", icon: Ellipsis, matches: ["/settings", "/auth", "/tags"] },
 ];
 
 export default function MobileNav() {
@@ -25,7 +26,7 @@ export default function MobileNav() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex min-w-[72px] flex-col items-center gap-1 rounded-[18px] px-3 py-2 text-[10px] font-black transition-all ${
+              className={`flex min-w-[64px] flex-col items-center gap-1 rounded-[18px] px-2 py-2 text-[10px] font-black transition-all ${
                 active ? "bg-[var(--primary-light)] text-[var(--primary-color)]" : "text-faint"
               }`}
             >
